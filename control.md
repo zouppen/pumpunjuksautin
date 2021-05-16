@@ -9,7 +9,7 @@ cycle D is 0.9.
 
 Fill in parameters in this formula from the circuit below:
 
-<img src="https://render.githubusercontent.com/render/math?math=\LARGE\left(\frac{\frac{U_m}{U_f}-1}{R_m}-\frac{D}{R_d}\right)^{-1}$">
+<img src="https://render.githubusercontent.com/render/math?math=\LARGE R_t=\left(\frac{\frac{U_m}{U_f}-1}{R_m}-\frac{D}{R_d}\right)^{-1}">
 
 ![Variables in the formula](variables.svg)
 
