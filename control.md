@@ -15,4 +15,4 @@ Fill in parameters in this formula from the circuit below:
 
 ![Variables in the formula](variables.svg)
 
-This allows us to control at the same time as doing measurements and recover $R_t$.
+This allows us to control at the same time as doing measurements and recover R<sub>t</sub>.
