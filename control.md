@@ -1,6 +1,4 @@
----
-title: How Pumpunjuksautin works
-...
+# How Pumpunjuksautin works
 
 Pulls voltage over NTC thermistor while recovering original thermistor
 resistance.
