@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+import pcbnew
+
+# Load board and initialize plot controller
+board = pcbnew.LoadBoard("juksautin.kicad_pcb")
+
+pc = pcbnew.PLOT_CONTROLLER(board)
+po = pc.GetPlotOptions()
+po.SetPlotFrameRef(False)
+
+# Set current layer
+pc.SetLayer(pcbnew.B_Cu)
+
+# Plot single layer to file
+pc.OpenPlotfile("back_copper", pcbnew.PLOT_FORMAT_PDF, "back_copper")
+print("Plotting to " + pc.GetPlotFileName())
+pc.PlotLayer()
+pc.ClosePlot()
+
