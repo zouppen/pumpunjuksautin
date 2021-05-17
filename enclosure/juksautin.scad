@@ -59,7 +59,7 @@ pcb = 1.6;
 pcb_real = 2.2;
 pcb_width = 65+margin;
 h = 35+margin;
-pcb_surface = 4;
+pcb_surface = 3.5;
 pull = 3;
 
 thick = 2+1.2; // Thickness of front panel
@@ -70,11 +70,11 @@ module clip() {
     clip_y = 3.9;
     clip_w = 2.4;
     clip_h = 5.3;
-    clip_z = 8.6;
+    clip_z = 7.85;
     translate([0,0,clip_z]) linear_extrude(clip_h) polygon([[0,0],[clip_w,0],[clip_w,clip_start+clip_y],[-clip_x,clip_start],[0,clip_start]]);
 }
 
-above=10.5;
+above=10;
 
 // PCB box
 pcb_box(pcb_width, h, pcb_real, above-pcb+margin, pcb_surface-pcb, rail=1.5);
@@ -97,10 +97,10 @@ translate([open ? 80 : 0,0,0]) {
         }
 
         // Micro USB
-        translate([53.2+2,0,9.4]) {
+        translate([53.2+2,0,pcb_surface+5.4]) {
             cube([7.8,5,3], center=true);
         }
         
-        mc(8.1,6.4);
+        mc(8.1,pcb_surface+2.4);
     }
 }
