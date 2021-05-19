@@ -17,7 +17,7 @@ difference() {
     pos_x = pcb_width/2-19;
     pos_y = h+2;
     linear_extrude(inner_height+2) translate([pos_x,pos_y,0]) rotate([180,0,90]) import("din_clip_01.dxf");
-    translate([pos_x,pos_y+12.6,inner_height/2+1]) rotate([0,90,0]) screwdriver_hole(2, 7, 3);
+    translate([pos_x,pos_y+12.6,inner_height/2+1]) rotate([0,90,0]) screwdriver_hole(2, 5, 3);
 }
 
 translate([2+margin/2,2+margin/2 + (open ? -60 : 0),pcb+pcb_surface]) {
@@ -42,6 +42,9 @@ module pcb_box(w, h, pcb_thickness, above, below, rail=3, wall=2, dent_size = 6)
         translate([wall,-1,wall]) {
             cube([w,wall+1,inside_h]);
         }
+        
+        // Half a wall from the front
+        cube([w+2*wall,wall/2,inside_h+2*wall]);
         
         dent_depth=3;
         translate([wall,2*wall, wall+below+pcb_thickness+above/2-dent_size/2]) {
@@ -85,9 +88,12 @@ inner_height = pcb_real+ above-pcb+margin+pcb_surface-pcb+2;
 translate([open ? 80 : 0,0,0]) {
     difference () {
         union () {
+            // Outer cover
+            cube([pcb_width+4,1,inner_height+2]);
+
             // Indent
-            translate([0+2+margin/2,0,2+margin/2]) {
-                cube([pcb_width-margin,2,inner_height-margin-2]);
+            translate([2+margin/2,1,2+margin/2]) {
+                cube([pcb_width-margin,1,inner_height-margin-2]);
             }
             
             // Clips
