@@ -5,8 +5,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "Pumpunjuksautin"
-Date "2021-05-17"
-Rev "0.5"
+Date "2021-05-24"
+Rev "0.6"
 Comp "Oy Pula-ajan Puhelin Ab"
 Comment1 ""
 Comment2 ""
@@ -59,11 +59,11 @@ F 3 "~" H 4100 4450 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
-	4750 2100 4750 2200
+	3550 2000 3550 2100
 Connection ~ 4400 4450
-Connection ~ 4750 2200
+Connection ~ 3550 2100
 Wire Wire Line
-	4750 2200 4750 2400
+	3550 2100 3550 2300
 Wire Wire Line
 	4400 4450 4850 4450
 Wire Wire Line
@@ -82,43 +82,43 @@ $EndComp
 $Comp
 L power:GND #PWR0104
 U 1 1 61344B44
-P 4750 2400
-F 0 "#PWR0104" H 4750 2150 50  0001 C CNN
-F 1 "GND" H 4755 2227 50  0000 C CNN
-F 2 "" H 4750 2400 50  0001 C CNN
-F 3 "" H 4750 2400 50  0001 C CNN
-	1    4750 2400
+P 3550 2300
+F 0 "#PWR0104" H 3550 2050 50  0001 C CNN
+F 1 "GND" H 3555 2127 50  0000 C CNN
+F 2 "" H 3550 2300 50  0001 C CNN
+F 3 "" H 3550 2300 50  0001 C CNN
+	1    3550 2300
 	1    0    0    -1  
 $EndComp
-NoConn ~ 5100 2700
-NoConn ~ 5100 2600
-NoConn ~ 5100 2500
-NoConn ~ 5100 2400
-NoConn ~ 6000 2100
-NoConn ~ 5100 3000
-NoConn ~ 5100 2900
-NoConn ~ 5100 2800
+NoConn ~ 3900 2600
+NoConn ~ 3900 2500
+NoConn ~ 3900 2400
+NoConn ~ 3900 2300
+NoConn ~ 4800 2000
+NoConn ~ 3900 2900
+NoConn ~ 3900 2800
+NoConn ~ 3900 2700
 $Comp
 L Sparkfun:SPARKFUN_PRO_MICRO B1
 U 1 1 60E2242B
-P 5550 2450
-F 0 "B1" H 5550 3300 45  0000 C CNN
-F 1 "SPARKFUN_PRO_MICRO" H 5550 3200 45  0000 C CNN
-F 2 "Sparkfun boards:SPARKFUN_PRO_MICRO" H 5550 3250 20  0001 C CNN
-F 3 "" H 5550 2450 50  0001 C CNN
-F 4 "" H 5550 3181 60  0000 C CNN "Kenttä4"
-	1    5550 2450
+P 4350 2350
+F 0 "B1" H 4350 3200 45  0000 C CNN
+F 1 "SPARKFUN_PRO_MICRO" H 4350 3100 45  0000 C CNN
+F 2 "Sparkfun boards:SPARKFUN_PRO_MICRO" H 4350 3150 20  0001 C CNN
+F 3 "" H 4350 2350 50  0001 C CNN
+F 4 "" H 4350 3081 60  0000 C CNN "Kenttä4"
+	1    4350 2350
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:VCC #PWR0106
 U 1 1 6137ACC3
-P 6000 2200
-F 0 "#PWR0106" H 6000 2050 50  0001 C CNN
-F 1 "VCC" V 6000 2400 50  0000 C CNN
-F 2 "" H 6000 2200 50  0001 C CNN
-F 3 "" H 6000 2200 50  0001 C CNN
-	1    6000 2200
+P 4800 2100
+F 0 "#PWR0106" H 4800 1950 50  0001 C CNN
+F 1 "VCC" V 4800 2300 50  0000 C CNN
+F 2 "" H 4800 2100 50  0001 C CNN
+F 3 "" H 4800 2100 50  0001 C CNN
+	1    4800 2100
 	0    1    1    0   
 $EndComp
 Wire Wire Line
@@ -157,28 +157,28 @@ Text GLabel 7250 4500 0    50   3State ~ 0
 A
 Text GLabel 7250 4700 0    50   3State ~ 0
 B
-NoConn ~ 6000 2900
+NoConn ~ 4800 2800
 Wire Wire Line
 	4250 4450 4400 4450
-Text GLabel 6000 2400 2    50   Output ~ 0
+Text GLabel 4800 2300 2    50   Output ~ 0
 DRIVE
 Text GLabel 3800 4450 0    50   Input ~ 0
 DRIVE
 Wire Wire Line
 	3950 4450 3800 4450
 Wire Wire Line
-	4750 2200 5100 2200
+	3550 2100 3900 2100
 Wire Wire Line
-	4750 2100 5100 2100
+	3550 2000 3900 2000
 $Comp
 L power:GND #PWR0109
 U 1 1 60A206FA
-P 6400 2100
-F 0 "#PWR0109" H 6400 1850 50  0001 C CNN
-F 1 "GND" H 6405 1927 50  0000 C CNN
-F 2 "" H 6400 2100 50  0001 C CNN
-F 3 "" H 6400 2100 50  0001 C CNN
-	1    6400 2100
+P 7550 2800
+F 0 "#PWR0109" H 7550 2550 50  0001 C CNN
+F 1 "GND" H 7555 2627 50  0000 C CNN
+F 2 "" H 7550 2800 50  0001 C CNN
+F 3 "" H 7550 2800 50  0001 C CNN
+	1    7550 2800
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -186,8 +186,8 @@ L Diode:DZ2S039X0L D4
 U 1 1 60A26129
 P 4850 4700
 F 0 "D4" V 4804 4779 50  0000 L CNN
-F 1 "ESD5Z3.3T1G" V 4895 4779 50  0000 L CNN
-F 2 "Diode_SMD:D_SOD-523" H 4850 4525 50  0001 C CNN
+F 1 "SD05.TCT" V 4895 4779 50  0000 L CNN
+F 2 "Diode_SMD:D_SOD-323_HandSoldering" H 4850 4525 50  0001 C CNN
 F 3 "https://industrial.panasonic.com/content/data/SC/ds/ds4/DZ2S03900L_E.pdf" H 4850 4700 50  0001 C CNN
 	1    4850 4700
 	0    1    1    0   
@@ -204,17 +204,6 @@ Wire Wire Line
 Connection ~ 4850 4450
 Wire Wire Line
 	4850 4450 5050 4450
-$Comp
-L Diode:DZ2S039X0L D5
-U 1 1 60AC4101
-P 6400 1950
-F 0 "D5" V 6354 2029 50  0000 L CNN
-F 1 "ESD5Z12T1G" V 6445 2029 50  0000 L CNN
-F 2 "Diode_SMD:D_SOD-523" H 6400 1775 50  0001 C CNN
-F 3 "https://industrial.panasonic.com/content/data/SC/ds/ds4/DZ2S03900L_E.pdf" H 6400 1950 50  0001 C CNN
-	1    6400 1950
-	0    1    1    0   
-$EndComp
 $Comp
 L power:GND #PWR0110
 U 1 1 60A277F3
@@ -271,7 +260,7 @@ U 1 1 60AD6F27
 P 2150 4550
 F 0 "J2" H 2250 4800 50  0000 C CNN
 F 1 "ATMEGA32U4 pin 42" H 2200 4700 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 2150 4550 50  0001 C CNN
+F 2 "Connector_Wire:SolderWire-0.5sqmm_1x01_D0.9mm_OD2.1mm" H 2150 4550 50  0001 C CNN
 F 3 "~" H 2150 4550 50  0001 C CNN
 	1    2150 4550
 	1    0    0    -1  
@@ -289,25 +278,12 @@ Text GLabel 3800 4100 0    50   Output ~ 0
 FB
 Wire Wire Line
 	3800 4100 3950 4100
-Text GLabel 6000 2300 2    50   Input ~ 0
+Text GLabel 4800 2200 2    50   Input ~ 0
 FB
 Wire Notes Line
 	1700 3700 3200 3700
 Wire Notes Line
 	3200 3700 3200 5300
-Wire Wire Line
-	6200 1900 6200 1800
-Wire Wire Line
-	6400 2100 6200 2100
-Wire Wire Line
-	6200 2100 6200 2000
-Wire Wire Line
-	6200 2000 6000 2000
-Connection ~ 6400 2100
-Wire Wire Line
-	6000 1900 6200 1900
-Wire Wire Line
-	6200 1800 6400 1800
 Wire Notes Line
 	5850 5600 5850 7200
 Wire Notes Line
@@ -320,23 +296,20 @@ Wire Notes Line
 	3350 5300 3350 3700
 Wire Notes Line
 	3350 3700 5550 3700
-Connection ~ 6400 1800
 $Comp
 L power:GND #PWR0108
 U 1 1 61456AC1
-P 6650 4550
-F 0 "#PWR0108" H 6650 4300 50  0001 C CNN
-F 1 "GND" H 6650 4350 50  0000 C CNN
-F 2 "" H 6650 4550 50  0001 C CNN
-F 3 "" H 6650 4550 50  0001 C CNN
-	1    6650 4550
+P 6550 4550
+F 0 "#PWR0108" H 6550 4300 50  0001 C CNN
+F 1 "GND" H 6550 4350 50  0000 C CNN
+F 2 "" H 6550 4550 50  0001 C CNN
+F 3 "" H 6550 4550 50  0001 C CNN
+	1    6550 4550
 	1    0    0    -1  
 $EndComp
-Text GLabel 6550 4550 3    50   Output ~ 0
+Text GLabel 6650 4550 3    50   Output ~ 0
 VIN
-Wire Wire Line
-	6650 1800 6400 1800
-Text GLabel 6650 1800 2    50   Input ~ 0
+Text GLabel 8250 2450 2    50   Input ~ 0
 VIN
 Text Notes 1700 3650 0    50   ~ 0
 Analog reference voltage 1.225V
@@ -354,15 +327,15 @@ Wire Notes Line
 	6800 3700 5700 3700
 Text Notes 5700 3650 0    50   ~ 0
 Screw terminal
-Text GLabel 5100 2000 0    50   Input ~ 0
+Text GLabel 3900 1900 0    50   Input ~ 0
 RX
 Text GLabel 8050 4800 2    50   Input ~ 0
 TX
 Text GLabel 8050 4400 2    50   Output ~ 0
 RX
-Text GLabel 5100 1900 0    50   Output ~ 0
+Text GLabel 3900 1800 0    50   Output ~ 0
 TX
-Text GLabel 5100 2300 0    50   Output ~ 0
+Text GLabel 3900 2200 0    50   Output ~ 0
 TX_EN
 Text GLabel 8200 4600 2    50   Input ~ 0
 TX_EN
@@ -392,7 +365,7 @@ F 3 "~" H 6250 4350 50  0001 C CNN
 	1    6250 4350
 	0    -1   -1   0   
 $EndComp
-Text GLabel 6000 3000 2    50   Input ~ 0
+Text GLabel 4800 2900 2    50   Input ~ 0
 PUMPFAIL_M
 Text GLabel 5250 6000 2    50   Output ~ 0
 PUMPFAIL_M
@@ -412,8 +385,8 @@ L Diode:DZ2S039X0L D1
 U 1 1 60A7DFC0
 P 4900 6500
 F 0 "D1" V 4854 6579 50  0000 L CNN
-F 1 "ESD5Z3.3T1G" V 4945 6579 50  0000 L CNN
-F 2 "Diode_SMD:D_SOD-523" H 4900 6325 50  0001 C CNN
+F 1 "SD05.TCT" V 4945 6579 50  0000 L CNN
+F 2 "Diode_SMD:D_SOD-323_HandSoldering" H 4900 6325 50  0001 C CNN
 F 3 "https://industrial.panasonic.com/content/data/SC/ds/ds4/DZ2S03900L_E.pdf" H 4900 6500 50  0001 C CNN
 	1    4900 6500
 	0    1    1    0   
@@ -467,8 +440,8 @@ L Diode:DZ2S039X0L D2
 U 1 1 60ACD8EE
 P 2200 6550
 F 0 "D2" V 2154 6629 50  0000 L CNN
-F 1 "ESD5Z3.3T1G" V 2245 6629 50  0000 L CNN
-F 2 "Diode_SMD:D_SOD-523" H 2200 6375 50  0001 C CNN
+F 1 "SD05.TCT" V 2245 6629 50  0000 L CNN
+F 2 "Diode_SMD:D_SOD-323_HandSoldering" H 2200 6375 50  0001 C CNN
 F 3 "https://industrial.panasonic.com/content/data/SC/ds/ds4/DZ2S03900L_E.pdf" H 2200 6550 50  0001 C CNN
 	1    2200 6550
 	0    1    1    0   
@@ -497,7 +470,7 @@ Wire Wire Line
 	2100 5900 2200 5900
 Wire Wire Line
 	2200 5900 2200 5950
-Text GLabel 6000 2600 2    50   3State ~ 0
+Text GLabel 4800 2500 2    50   3State ~ 0
 IO1_M
 Text GLabel 5950 4550 3    50   3State ~ 0
 IO1
@@ -524,7 +497,7 @@ Wire Wire Line
 	4900 6300 5250 6300
 Wire Wire Line
 	5250 6000 5200 6000
-Text GLabel 6000 2500 2    50   3State ~ 0
+Text GLabel 4800 2400 2    50   3State ~ 0
 IO2_M
 Text Notes 3050 5550 0    50   ~ 0
 IO2
@@ -546,8 +519,8 @@ L Diode:DZ2S039X0L D3
 U 1 1 60B69DF6
 P 3550 6550
 F 0 "D3" V 3504 6629 50  0000 L CNN
-F 1 "ESD5Z3.3T1G" V 3595 6629 50  0000 L CNN
-F 2 "Diode_SMD:D_SOD-523" H 3550 6375 50  0001 C CNN
+F 1 "SD05.TCT" V 3595 6629 50  0000 L CNN
+F 2 "Diode_SMD:D_SOD-323_HandSoldering" H 3550 6375 50  0001 C CNN
 F 3 "https://industrial.panasonic.com/content/data/SC/ds/ds4/DZ2S03900L_E.pdf" H 3550 6550 50  0001 C CNN
 	1    3550 6550
 	0    1    1    0   
@@ -607,6 +580,108 @@ F 3 "~" H 4100 4100 50  0001 C CNN
 	1    4100 4100
 	0    -1   -1   0   
 $EndComp
-NoConn ~ 6000 2700
-NoConn ~ 6000 2800
+NoConn ~ 4800 2600
+NoConn ~ 4800 2700
+$Comp
+L power:PWR_FLAG #FLG0101
+U 1 1 60AC2E6B
+P 8000 2350
+F 0 "#FLG0101" H 8000 2425 50  0001 C CNN
+F 1 "PWR_FLAG" H 8000 2523 50  0000 C CNN
+F 2 "" H 8000 2350 50  0001 C CNN
+F 3 "~" H 8000 2350 50  0001 C CNN
+	1    8000 2350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Regulator_Switching:R-78E5.0-0.5 U3
+U 1 1 60AE05D2
+P 7550 2450
+F 0 "U3" H 7550 2692 50  0000 C CNN
+F 1 "R-78E5.0-0.5" H 7550 2601 50  0000 C CNN
+F 2 "Converter_DCDC:Converter_DCDC_RECOM_R-78E-0.5_THT" H 7600 2200 50  0001 L CIN
+F 3 "https://www.recom-power.com/pdf/Innoline/R-78Exx-0.5.pdf" H 7550 2450 50  0001 C CNN
+	1    7550 2450
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	7850 2450 8000 2450
+Wire Wire Line
+	8000 2350 8000 2450
+Connection ~ 8000 2450
+Wire Wire Line
+	8000 2450 8250 2450
+Wire Wire Line
+	7550 2750 7550 2800
+Connection ~ 7550 2800
+Wire Wire Line
+	8000 2750 8000 2800
+Wire Wire Line
+	8000 2800 7550 2800
+$Comp
+L power:VCC #PWR0113
+U 1 1 60B609DA
+P 7050 2350
+F 0 "#PWR0113" H 7050 2200 50  0001 C CNN
+F 1 "VCC" H 7065 2523 50  0000 C CNN
+F 2 "" H 7050 2350 50  0001 C CNN
+F 3 "" H 7050 2350 50  0001 C CNN
+	1    7050 2350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7250 2450 7050 2450
+$Comp
+L power:GND #PWR0114
+U 1 1 60B637D3
+P 4900 1900
+F 0 "#PWR0114" H 4900 1650 50  0001 C CNN
+F 1 "GND" H 5050 1900 50  0000 C CNN
+F 2 "" H 4900 1900 50  0001 C CNN
+F 3 "" H 4900 1900 50  0001 C CNN
+	1    4900 1900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4900 1900 4800 1900
+Wire Notes Line
+	6850 1700 8600 1700
+Wire Notes Line
+	8600 1700 8600 3300
+Wire Notes Line
+	6850 3300 6850 1700
+Text Notes 6850 1650 0    50   ~ 0
+Voltage supply
+Wire Notes Line
+	6900 3300 8600 3300
+NoConn ~ 4800 1800
+$Comp
+L Device:C C3
+U 1 1 60BBD556
+P 8000 2600
+F 0 "C3" H 8115 2646 50  0000 L CNN
+F 1 "10u" H 8115 2555 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric_Pad1.33x1.80mm_HandSolder" H 8038 2450 50  0001 C CNN
+F 3 "~" H 8000 2600 50  0001 C CNN
+	1    8000 2600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C2
+U 1 1 60BBE74F
+P 7050 2600
+F 0 "C2" H 7165 2646 50  0000 L CNN
+F 1 "10u" H 7165 2555 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric_Pad1.33x1.80mm_HandSolder" H 7088 2450 50  0001 C CNN
+F 3 "~" H 7050 2600 50  0001 C CNN
+	1    7050 2600
+	1    0    0    -1  
+$EndComp
+Connection ~ 7050 2450
+Wire Wire Line
+	7550 2800 7050 2800
+Wire Wire Line
+	7050 2800 7050 2750
+Wire Wire Line
+	7050 2350 7050 2450
 $EndSCHEMATC
