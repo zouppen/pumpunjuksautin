@@ -5,8 +5,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "Pumpunjuksautin"
-Date "2021-05-24"
-Rev "0.6"
+Date "2021-05-28"
+Rev "0.7"
 Comp "Oy Pula-ajan Puhelin Ab"
 Comment1 ""
 Comment2 ""
@@ -299,15 +299,15 @@ Wire Notes Line
 $Comp
 L power:GND #PWR0108
 U 1 1 61456AC1
-P 6550 4550
-F 0 "#PWR0108" H 6550 4300 50  0001 C CNN
-F 1 "GND" H 6550 4350 50  0000 C CNN
-F 2 "" H 6550 4550 50  0001 C CNN
-F 3 "" H 6550 4550 50  0001 C CNN
-	1    6550 4550
+P 6650 4550
+F 0 "#PWR0108" H 6650 4300 50  0001 C CNN
+F 1 "GND" H 6650 4350 50  0000 C CNN
+F 2 "" H 6650 4550 50  0001 C CNN
+F 3 "" H 6650 4550 50  0001 C CNN
+	1    6650 4550
 	1    0    0    -1  
 $EndComp
-Text GLabel 6650 4550 3    50   Output ~ 0
+Text GLabel 6550 4550 3    50   Output ~ 0
 VIN
 Text GLabel 8250 2450 2    50   Input ~ 0
 VIN
