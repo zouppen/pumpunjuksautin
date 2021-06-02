@@ -47,7 +47,7 @@ F 4 "C134755" H 3250 4050 50  0001 C CNN "LCSC"
 	1    0    0    -1  
 $EndComp
 Text GLabel 3650 3800 2    50   UnSpc ~ 0
-K5
+K9
 $Comp
 L Device:R R4
 U 1 1 60E223F9
@@ -92,9 +92,9 @@ A
 Text GLabel 1800 3900 3    50   3State ~ 0
 B
 Text GLabel 1600 3900 3    50   UnSpc ~ 0
-K5
+K9
 Text GLabel 1500 3900 3    50   UnSpc ~ 0
-K5
+K9
 Text GLabel 5150 1750 2    50   3State ~ 0
 A
 Text GLabel 5150 1950 2    50   3State ~ 0
@@ -569,7 +569,7 @@ IO2
 Text GLabel 6650 5950 2    50   Input ~ 0
 PUMPFAIL
 Text GLabel 6650 6150 2    50   UnSpc ~ 0
-K5
+K9
 $Comp
 L power:GND #PWR011
 U 1 1 60CF9B5F
