@@ -314,11 +314,6 @@ F 3 "" H 9450 1000 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	9450 1000 9450 1100
-Wire Wire Line
-	9450 1100 9550 1100
-Connection ~ 9550 1100
-Wire Wire Line
-	9550 1100 9650 1100
 Text Label 8950 2000 2    50   ~ 0
 AREF
 $Comp
@@ -566,9 +561,9 @@ Text GLabel 5650 5950 0    50   3State ~ 0
 IO1
 Text GLabel 5650 6150 0    50   3State ~ 0
 IO2
-Text GLabel 6650 5950 2    50   Input ~ 0
+Text GLabel 6650 6150 2    50   Input ~ 0
 PUMPFAIL
-Text GLabel 6650 6150 2    50   UnSpc ~ 0
+Text GLabel 6650 5950 2    50   UnSpc ~ 0
 K9
 $Comp
 L power:GND #PWR011
@@ -594,20 +589,6 @@ F 3 "" H 6150 5550 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	4100 6300 4100 6350
-Connection ~ 9450 4700
-Connection ~ 9450 1100
-$Comp
-L MCU_Microchip_ATmega:ATmega32U4-AU U4
-U 1 1 60B53808
-P 9550 2900
-F 0 "U4" H 9550 1011 50  0000 L CNN
-F 1 "ATmega32U4-AU" H 9550 920 50  0000 L CNN
-F 2 "Package_QFP:TQFP-44_10x10mm_P0.8mm" H 9550 2900 50  0001 C CIN
-F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7766-8-bit-AVR-ATmega16U4-32U4_Datasheet.pdf" H 9550 2900 50  0001 C CNN
-F 4 "C44854" H 9550 2900 50  0001 C CNN "LCSC"
-	1    9550 2900
-	1    0    0    -1  
-$EndComp
 Text GLabel 4950 6450 2    50   3State ~ 0
 IO2
 $Comp
@@ -708,26 +689,10 @@ NoConn ~ 10150 2100
 NoConn ~ 10150 2300
 NoConn ~ 10150 2400
 NoConn ~ 10150 2600
-NoConn ~ 10150 3000
-NoConn ~ 10150 3100
-NoConn ~ 10150 3200
-NoConn ~ 10150 3300
 NoConn ~ 10150 3500
 NoConn ~ 10150 3600
 NoConn ~ 10150 3800
 NoConn ~ 10150 3900
-Connection ~ 8400 2000
-$Comp
-L Connector:TestPoint TP1
-U 1 1 60EAECA1
-P 8400 2000
-F 0 "TP1" V 8446 2188 50  0000 L CNN
-F 1 "AR" V 8355 2188 50  0000 L CNN
-F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 8600 2000 50  0001 C CNN
-F 3 "~" H 8600 2000 50  0001 C CNN
-	1    8400 2000
-	0    -1   -1   0   
-$EndComp
 Text Label 8950 1400 2    50   ~ 0
 RESET
 $Comp
@@ -924,4 +889,97 @@ F 3 "" H 1100 3900 50  0001 C CNN
 	1    1100 3900
 	1    0    0    -1  
 $EndComp
+$Comp
+L power:GND #PWR0106
+U 1 1 60C3103F
+P 5800 3500
+F 0 "#PWR0106" H 5800 3250 50  0001 C CNN
+F 1 "GND" H 5950 3500 50  0000 C CNN
+F 2 "" H 5800 3500 50  0001 C CNN
+F 3 "" H 5800 3500 50  0001 C CNN
+	1    5800 3500
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:VCC #PWR0110
+U 1 1 60C31968
+P 5800 3400
+F 0 "#PWR0110" H 5800 3250 50  0001 C CNN
+F 1 "VCC" H 5950 3400 50  0000 C CNN
+F 2 "" H 5800 3400 50  0001 C CNN
+F 3 "" H 5800 3400 50  0001 C CNN
+	1    5800 3400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:Conn_01x02_Male J2
+U 1 1 60C5E35B
+P 5600 3400
+F 0 "J2" H 5708 3581 50  0000 R CNN
+F 1 "Power out" H 5708 3490 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 5600 3400 50  0001 C CNN
+F 3 "~" H 5600 3400 50  0001 C CNN
+	1    5600 3400
+	1    0    0    -1  
+$EndComp
+Connection ~ 9450 4700
+Connection ~ 9450 1100
+Wire Wire Line
+	9550 1100 9650 1100
+Wire Wire Line
+	9450 1100 9550 1100
+Connection ~ 9550 1100
+$Comp
+L MCU_Microchip_ATmega:ATmega32U4-AU U4
+U 1 1 60B53808
+P 9550 2900
+F 0 "U4" H 9550 1011 50  0000 L CNN
+F 1 "ATmega32U4-AU" H 9550 920 50  0000 L CNN
+F 2 "Package_QFP:TQFP-44_10x10mm_P0.8mm" H 9550 2900 50  0001 C CIN
+F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7766-8-bit-AVR-ATmega16U4-32U4_Datasheet.pdf" H 9550 2900 50  0001 C CNN
+F 4 "C44854" H 9550 2900 50  0001 C CNN "LCSC"
+	1    9550 2900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x03 J5
+U 1 1 60C825FD
+P 10500 3200
+F 0 "J5" H 10580 3242 50  0000 L CNN
+F 1 "Conn_01x03" H 10580 3151 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 10500 3200 50  0001 C CNN
+F 3 "~" H 10500 3200 50  0001 C CNN
+	1    10500 3200
+	1    0    0    -1  
+$EndComp
+NoConn ~ 10150 3100
+Wire Wire Line
+	10300 3300 10150 3300
+Wire Wire Line
+	10150 3200 10300 3200
+Wire Wire Line
+	10150 3000 10300 3000
+Wire Wire Line
+	10300 3000 10300 3100
+$Comp
+L Connector_Generic:Conn_01x02 J6
+U 1 1 60CB591E
+P 7900 2150
+F 0 "J6" H 7818 2367 50  0000 C CNN
+F 1 "AREF_OUT" H 7818 2276 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 7900 2150 50  0001 C CNN
+F 3 "~" H 7900 2150 50  0001 C CNN
+	1    7900 2150
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	8100 2250 8400 2250
+Connection ~ 8400 2250
+Wire Wire Line
+	8100 2150 8250 2150
+Wire Wire Line
+	8250 2150 8250 2000
+Wire Wire Line
+	8250 2000 8400 2000
+Connection ~ 8400 2000
 $EndSCHEMATC
