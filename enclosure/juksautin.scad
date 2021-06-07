@@ -25,7 +25,7 @@ translate([2+margin/2,2+margin/2 + (open ? -60 : 0),pcb+pcb_surface]) {
     rotate([90,0,0]) translate([175,0,65]) import("pcb.stl");
 }
 
-module pcb_box(w, h, pcb_thickness, above, below, rail=3, wall=2, dent_size = 6) {
+module pcb_box(w, h, pcb_thickness, above, below, rail=3, wall=2) {
     inside_h = above+below+pcb_thickness;
     difference () {
         // Outer wall
@@ -39,16 +39,16 @@ module pcb_box(w, h, pcb_thickness, above, below, rail=3, wall=2, dent_size = 6)
             cube([w,h+1, pcb_thickness]);
         }
         // Front opening
-        translate([wall,-1,wall]) {
-            cube([w,wall+1,inside_h]);
+        translate([wall,0,wall]) {
+            cube([w,wall,inside_h]);
         }
         
-        // Half a wall from the front
-        cube([w+2*wall,wall/2,inside_h+2*wall]);
+        // Half a wall from the front. +1 offset to avoid UI bug.
+        translate([-1,-1,-1]) cube([w+2*wall+2,wall/2+1,inside_h+2*wall+2]);
         
         dent_depth=3;
-        translate([wall,2*wall, wall+below+pcb_thickness+above/2-dent_size/2]) {
-            cube([w,dent_depth,dent_size]);
+        translate([wall,2*wall, wall+below+pcb_thickness-margin]) {
+            cube([w,dent_depth,above+margin]);
         }
     }
 }
@@ -97,8 +97,8 @@ translate([open ? 80 : 0,0,0]) {
             }
             
             // Clips
-            translate([4-0.3,0,0]) clip();
-            translate([pcb_width+0.3,0,0]) mirror([1,0,0]) clip();
+            translate([4-0.2,0,0]) clip();
+            translate([pcb_width+0.2,0,0]) mirror([1,0,0]) clip();
 
         }
 
