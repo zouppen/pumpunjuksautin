@@ -21,8 +21,8 @@ difference() {
 }
 
 translate([2+margin/2,2+margin/2 + (open ? -60 : 0),pcb+pcb_surface]) {
-    // Kicad model. Obtain by VRML export from 
-    rotate([90,0,0]) translate([175,0,65]) import("pcb.stl");
+    // Kicad model via Blender
+    rotate([90,0,0]) translate([0,0,0]) import("pcb.stl");
 }
 
 module pcb_box(w, h, pcb_thickness, above, below, rail=3, wall=2) {
@@ -85,7 +85,7 @@ pcb_box(pcb_width, h, pcb_real, above-pcb+margin, pcb_surface-pcb, rail=1.5);
 // Calculated from magic values
 inner_height = pcb_real+ above-pcb+margin+pcb_surface-pcb+2;
 
-translate([open ? 80 : 0,0,0]) {
+translate([open ? 80 : 0,0,0]) with_idc_frame([49.05,0,pcb_surface+0.8],7) {
     difference () {
         union () {
             // Outer cover
@@ -101,12 +101,19 @@ translate([open ? 80 : 0,0,0]) {
             translate([pcb_width+0.2,0,0]) mirror([1,0,0]) clip();
 
         }
-
-        // Micro USB
-        translate([53.2+2,0,pcb_surface+5.4]) {
-            cube([7.8,5,3], center=true);
-        }
         
         mc(8.1,pcb_surface+2.4);
     }
+}
+
+module with_idc_frame(pos=[0,0,0], depth=5) {
+    module obj(tweak=0) {
+        translate(pos) rotate([90,0,0]) translate([0,-20,-depth-tweak]) linear_extrude(depth+2*tweak) children();
+    }
+    
+    difference() {
+        children();
+        obj(0.1) import("idc-inner.svg");
+    }
+    obj() import("idc-outer.svg");
 }
