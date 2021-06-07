@@ -72,12 +72,12 @@ module clip() {
     clip_x = 1.5;
     clip_y = 3.9;
     clip_w = 2.4;
-    clip_h = 5.3;
+    clip_h = 7;
     clip_z = 7.85;
     translate([0,0,clip_z]) linear_extrude(clip_h) polygon([[0,0],[clip_w,0],[clip_w,clip_start+clip_y],[-clip_x,clip_start],[0,clip_start]]);
 }
 
-above=10;
+above=12;
 
 // PCB box
 pcb_box(pcb_width, h, pcb_real, above-pcb+margin, pcb_surface-pcb, rail=1.5);
