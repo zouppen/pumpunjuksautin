@@ -11,6 +11,7 @@
 volatile uint16_t ana[16];
 volatile uint16_t target;
 volatile uint16_t meas_count = 0;
+volatile uint16_t pulldowns = 0;
 
 void start_adc_sourcing(uint8_t chan) {
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -93,11 +94,12 @@ void setup(){
 // Processor loop
 void loop(){
   // Check to see if the value has been updated
-  uint16_t i,temp, volts, f;
+  uint16_t i,temp, volts, f, pd;
   ATOMIC_BLOCK(ATOMIC_FORCEON) {
     i = meas_count;
     temp = ana[8];
     volts = ana[0];
+    pd = pulldowns;
   }
   
   Serial.print(i);
@@ -107,6 +109,8 @@ void loop(){
   Serial.print(volts);
   Serial.print(' ');
   Serial.print(target);
+  Serial.print(' ');
+  Serial.print(pd);
   Serial.print('\n');
 
   // Quick hack
@@ -147,6 +151,8 @@ ISR(ADC_vect){
 
   // Pump logic. Pull capacitor down to target voltage.
   if (port == 0) {
-    pinMode(A1, val < target ? INPUT : OUTPUT);
+    bool pulldown  = val > target;
+    pinMode(A1, pulldown ? OUTPUT : INPUT);
+    pulldowns++;
   }
 }
