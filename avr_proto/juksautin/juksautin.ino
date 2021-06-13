@@ -9,7 +9,7 @@
 
 // Value to store analog result
 volatile uint16_t ana[16];
-volatile uint16_t target = 0.5f * 1024 / 1.100; // 500mV @ 1.1V AREF
+volatile uint16_t target;
 volatile uint16_t meas_count = 0;
 
 void start_adc_sourcing(uint8_t chan) {
@@ -29,6 +29,14 @@ void start_adc_sourcing(uint8_t chan) {
   }
 }
 
+// Set juksautin target voltage.
+void set_voltage(float u) {
+  uint16_t new_target = u / 1.1 * 1024;
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    target = new_target;
+  }
+}
+
 // Initialization
 void setup(){
   // Serial port setup
@@ -36,6 +44,8 @@ void setup(){
   while (!Serial) {
     // wait for serial port to connect. Needed for native USB port only
   }
+
+  set_voltage(0.5);
 
   // ADC setup
  
@@ -46,7 +56,6 @@ void setup(){
   // Set REFS1..0 in ADMUX (0x7C) to change reference voltage to internal
   // 1.1V reference
   ADMUX |= B11000000;
-  //ADMUX |= B01000000;
  
   // Set ADEN in ADCSRA (0x7A) to enable the ADC.
   // Note, this instruction takes 12 ADC clocks to execute
@@ -100,6 +109,13 @@ void loop(){
   Serial.print(target);
   Serial.print('\n');
 
+  // Quick hack
+  if (Serial.available() > 0) {
+    float target = Serial.parseFloat();
+    while (Serial.read() != '\n');
+    set_voltage(target);
+  }
+
   // Whatever else you would normally have running in loop().
 }
 
@@ -133,8 +149,4 @@ ISR(ADC_vect){
   if (port == 0) {
     pinMode(A1, val < target ? INPUT : OUTPUT);
   }
- 
-  // Not needed because free-running mode is enabled.
-  // Set ADSC in ADCSRA (0x7A) to start another ADC conversion
-//  ADCSRA |= B01000000;
 }
