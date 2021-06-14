@@ -125,18 +125,13 @@ void loop(){
 
 
 // Interrupt service routine for the ADC completion
-ISR(ADC_vect){
-  // Which port is in use
-  int port = ADMUX & B00001111;
+ISR(ADC_vect) {
+  static bool juksautus = false;
+  // Store the ADC port of previous measurement before changing it
+  uint8_t port = ADMUX & B00001111;
 
-  // Must read low first
-  uint16_t val = ADCL | (ADCH << 8);
-
-  // Update analog value
-  ana[port] = val;
-  meas_count++;
-
-  // Rotate between different analog inputs
+  // Start the next measurement ASAP to minimize drift caused by this ISR.
+  // Rotate between different analog inputs.
   uint8_t cycle = meas_count & 0b111; // Cycle length: 8
   switch (cycle) {
     case 0:
@@ -149,10 +144,21 @@ ISR(ADC_vect){
       break;
   }
 
+  // Obtain previous result. Must read low first
+  uint16_t val = ADCL | (ADCH << 8);
+
   // Pump logic. Pull capacitor down to target voltage.
   if (port == 0) {
-    bool pulldown  = val > target;
-    pinMode(A1, pulldown ? OUTPUT : INPUT);
-    pulldowns++;
+    juksautus = val > target;
+    pinMode(A1, juksautus ? OUTPUT : INPUT);
   }
+
+  // Update analog value for access outside the ISR
+  ana[port] = val;
+
+  // What we really are interested is the ratio of pulldowns and total measurements.
+  // That allows us to calculate the real thermistor value while juksautus is happening.
+  // We calculate juksautus count by counting the periods of time the current is flowing.
+  meas_count++;
+  if (juksautus) pulldowns++;
 }
