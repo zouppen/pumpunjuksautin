@@ -42,7 +42,7 @@
      id="namedview8"
      showgrid="false"
      inkscape:zoom="12.325842"
-     inkscape:cx="18.0683"
+     inkscape:cx="18.433387"
      inkscape:cy="20.367003"
      inkscape:window-x="0"
      inkscape:window-y="0"
@@ -55,14 +55,34 @@
        orientation="0,1"
        id="guide1483"
        inkscape:locked="false" />
+    <sodipodi:guide
+       position="15.280721,9.1008912"
+       orientation="1,0"
+       id="guide1436"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="0,9.1008912"
+       orientation="1,0"
+       id="guide1438"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="3.4401001,7.851355"
+       orientation="1,0"
+       id="guide1440"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="11.840105,7.851355"
+       orientation="1,0"
+       id="guide1442"
+       inkscape:locked="false" />
   </sodipodi:namedview>
   <title
      id="title2">OpenSCAD Model</title>
   <path
      style="fill:#000000;stroke:none;stroke-width:1.88976371"
-     d="M 15.902344,2.7949219 11.926956,7.1777344 H 0 V 35.900391 h 4.3867188 v -24 H 19.066406 20.371094 V 7.1777344 h 17.011718 v 4.7226566 h 15.984376 v 24 h 4.386718 V 7.1777344 H 46.071545 l -4.46217,-4.3828125 z"
+     d="M 15.902344,2.7949219 8.615234,7.1777344 V 35.900391 h 4.386719 v -24 h 6.064453 1.304688 V 7.1777344 h 17.011718 v 4.7226566 h 7.36719 v 24 H 49.13672 V 7.1777344 L 41.609375,2.7949219 Z"
      transform="matrix(0.26458334,0,0,0.26458334,-11,-10)"
      id="path4"
      inkscape:connector-curvature="0"
-     sodipodi:nodetypes="cccccccccccccccccc" />
+     sodipodi:nodetypes="cccccccccccccccc" />
 </svg>

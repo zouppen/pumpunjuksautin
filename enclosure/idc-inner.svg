@@ -41,19 +41,22 @@
      inkscape:window-height="1381"
      id="namedview8"
      showgrid="false"
-     inkscape:zoom="17.431373"
-     inkscape:cx="39.728175"
-     inkscape:cy="19.325776"
+     inkscape:zoom="12.325842"
+     inkscape:cx="37.748701"
+     inkscape:cy="22.831841"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg6" />
+     inkscape:current-layer="svg6"
+     showguides="true"
+     inkscape:guide-bbox="true" />
   <title
      id="title2">OpenSCAD Model</title>
   <path
-     d="m -1.109258,-8.1008195 v 1.24968 H 3.11984 v 6.34999998 H -8.78084 -9.83924 V -6.8511395 h 3.8837 0.3454 v -1.24968 z"
+     style="fill:#000000;stroke:none;stroke-width:1.88976371"
+     d="m 20.371094,7.1777344 v 4.7226566 h -7.369141 v 24 H 44.75 v -24 H 37.382812 V 7.1777344 Z"
      id="path4"
-     style="fill:#000000;stroke:none;stroke-width:0.5"
      inkscape:connector-curvature="0"
-     sodipodi:nodetypes="ccccccccccc" />
+     sodipodi:nodetypes="ccccccccc"
+     transform="matrix(0.26458334,0,0,0.26458334,-11,-10)" />
 </svg>

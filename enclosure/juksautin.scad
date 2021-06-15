@@ -85,7 +85,7 @@ pcb_box(pcb_width, h, pcb_real, above-pcb+margin, pcb_surface-pcb, rail=1.5);
 // Calculated from magic values
 inner_height = pcb_real+ above-pcb+margin+pcb_surface-pcb+2;
 
-translate([open ? 80 : 0,0,0]) with_idc_frame([49.05,0,pcb_surface+0.8],7) {
+translate([open ? 80 : 0,0,0]) with_idc_frame([49.25,0,pcb_surface+0.8],8) {
     difference () {
         union () {
             // Outer cover
