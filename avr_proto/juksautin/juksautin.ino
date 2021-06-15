@@ -8,10 +8,18 @@
 // the Arduino interface
 
 // Value to store analog result
-volatile uint16_t ana[16];
-volatile uint16_t target;
-volatile uint16_t meas_count = 0;
-volatile uint16_t pulldowns = 0;
+typedef struct accu_t {
+	uint32_t sum;
+	uint16_t count;
+};
+
+#define K9_RAW (0)    // Real voltage in K9
+#define INT_TEMP (1)  // AVR internal temperature
+#define JUKSAUTIN (2) // Juksautin ratio
+#define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
+
+volatile accu_t v_accu[3];
+volatile uint16_t target; // Target voltage for juksautus
 
 void start_adc_sourcing(uint8_t chan) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -90,27 +98,38 @@ void setup() {
 	digitalWrite(A1, LOW);
 }
 
+// Take analog accumulator mean value
+float accu_mean(accu_t *a) {
+	return (float)a->sum / a->count;
+}
 
 // Processor loop
 void loop() {
-	// Check to see if the value has been updated
-	uint16_t i,temp, volts, f, pd;
+	static uint16_t i = ~0;
+	i++;
+
+	// Duplicate the data
+	accu_t accu[3];
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		i = meas_count;
-		temp = ana[8];
-		volts = ana[0];
-		pd = pulldowns;
+		// The buffer is so small it makes more sense to use copying than
+		// front/back buffering at the moment
+		memcpy(&accu, &v_accu, sizeof(accu));
+		memset(&v_accu, 0, sizeof(v_accu));
 	}
 
+	float ratio = accu_mean(&accu[JUKSAUTIN]);
+	float int_temp = (accu_mean(&accu[INT_TEMP])-324.31)/1.22;
+	float k9_raw = accu_mean(&accu[K9_RAW]) * VOLT;
+
 	Serial.print(i);
-	Serial.print(' ');
-	Serial.print(temp);
-	Serial.print(' ');
-	Serial.print(volts);
-	Serial.print(' ');
-	Serial.print(target);
-	Serial.print(' ');
-	Serial.print(pd);
+	Serial.print(": ");
+	Serial.print(int_temp);
+	Serial.print("°C ");
+	Serial.print(k9_raw);
+	Serial.print("V ");
+	Serial.print(ratio*100);
+	Serial.print("% ");
+	Serial.print(accu[JUKSAUTIN].count);
 	Serial.print('\n');
 
 	// Quick hack
@@ -131,7 +150,7 @@ ISR(ADC_vect) {
 
 	// Start the next measurement ASAP to minimize drift caused by this ISR.
 	// Rotate between different analog inputs.
-	uint8_t cycle = meas_count & 0b111; // Cycle length: 8
+	uint8_t cycle = v_accu[JUKSAUTIN].count & 0b111; // Cycle length: 8
 	switch (cycle) {
 	case 0:
 		// Internal temperature measurement
@@ -146,18 +165,31 @@ ISR(ADC_vect) {
 	// Obtain previous result. Must read low first
 	uint16_t val = ADCL | (ADCH << 8);
 
-	// Pump logic. Pull capacitor down to target voltage.
-	if (port == 0) {
+	switch (port) {
+	case 0:
+		// Pump logic. Pull capacitor down to target voltage.
 		juksautus = val > target;
 		pinMode(A1, juksautus ? OUTPUT : INPUT);
-	}
 
-	// Update analog value for access outside the ISR
-	ana[port] = val;
+		// Store measurement
+		store(&v_accu[K9_RAW], val);
+
+		break;
+	case 8:
+		store(&v_accu[INT_TEMP], val);
+		break;
+	}
 
 	// What we really are interested is the ratio of pulldowns and total measurements.
 	// That allows us to calculate the real thermistor value while juksautus is happening.
 	// We calculate juksautus count by counting the periods of time the current is flowing.
-	meas_count++;
-	if (juksautus) pulldowns++;
+	store(&v_accu[JUKSAUTIN], juksautus);
+}
+
+// Update cumulative analog value for access outside the ISR. Do not let it overflow.
+inline void store(accu_t *a, uint16_t val) {
+	// Stop storing when full
+	if (a->count == ~0) return;
+	a->sum += val;
+	a->count++;
 }
