@@ -1,13 +1,13 @@
 #include <util/atomic.h>
 
-// Testing interrupt-based analog reading
-// ATMega328p
+// Pumpunjuksautin prototype for ATMega328p
 
 // Note, many macro values are defined in <avr/io.h> and
 // <avr/interrupts.h>, which are included automatically by
 // the Arduino interface
 
-// Value to store analog result
+// Store analog measurement sum and measurement count. Used for mean
+// calculation.
 typedef struct accu_t {
 	uint32_t sum;
 	uint16_t count;
@@ -21,16 +21,16 @@ typedef struct accu_t {
 volatile accu_t v_accu[3];
 volatile uint16_t target; // Target voltage for juksautus
 
+// Set ADC source. Do not set above 15 because then you will overrun
+// other parts of ADMUX. A full list of possible inputs is available
+// in Table 24-4 of the ATMega328 datasheet.
 void start_adc_sourcing(uint8_t chan) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		// Clear MUX3..0 in ADMUX (0x7C) in preparation for setting the analog
 		// input
 		ADMUX &= B11110000;
 
-		// Set MUX3..0 in ADMUX (0x7C) to read from AD8 (Internal temp)
-		// Do not set above 15! You will overrun other parts of ADMUX. A full
-		// list of possible inputs is available in Table 24-4 of the ATMega328
-		// datasheet
+		// Set MUX3..0 in ADMUX (0x7C) to select ADC input
 		ADMUX |= chan;
 
 		// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
@@ -69,9 +69,6 @@ void setup() {
 	// Set ADEN in ADCSRA (0x7A) to enable the ADC.
 	// Note, this instruction takes 12 ADC clocks to execute
 	ADCSRA |= B10000000;
-
-	// Set ADATE in ADCSRA (0x7A) to enable auto-triggering.
-	//ADCSRA |= B00100000;
 
 	// Clear ADTS2..0 in ADCSRB (0x7B) to set trigger mode to free running.
 	// This means that as soon as an ADC has finished, the next will be
