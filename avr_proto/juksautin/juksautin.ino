@@ -13,12 +13,16 @@ typedef struct accu_t {
 	uint16_t count;
 };
 
-#define K9_RAW (0)    // Real voltage in K9
-#define INT_TEMP (1)  // AVR internal temperature
-#define JUKSAUTIN (2) // Juksautin ratio
+// Struct of accumulators.
+typedef struct accus_t {
+	accu_t k9_raw;    // Real voltage in K9
+	accu_t int_temp;  // AVR internal temperature
+	accu_t juksautin; // Juksautin ratio
+};
+
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 
-volatile accu_t v_accu[3];
+volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
 
 // Set ADC source. Do not set above 15 because then you will overrun
@@ -106,7 +110,7 @@ void loop() {
 	i++;
 
 	// Duplicate the data
-	accu_t accu[3];
+	accus_t accu;
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
 		// The buffer is so small it makes more sense to use copying than
 		// front/back buffering at the moment
@@ -114,9 +118,9 @@ void loop() {
 		memset(&v_accu, 0, sizeof(v_accu));
 	}
 
-	float ratio = accu_mean(&accu[JUKSAUTIN]);
-	float int_temp = (accu_mean(&accu[INT_TEMP])-324.31)/1.22;
-	float k9_raw = accu_mean(&accu[K9_RAW]) * VOLT;
+	float ratio = accu_mean(&accu.juksautin);
+	float int_temp = (accu_mean(&accu.int_temp)-324.31)/1.22;
+	float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
 
 	Serial.print(i);
 	Serial.print(": ");
@@ -126,7 +130,7 @@ void loop() {
 	Serial.print("V ");
 	Serial.print(ratio*100);
 	Serial.print("% ");
-	Serial.print(accu[JUKSAUTIN].count);
+	Serial.print(accu.juksautin.count);
 	Serial.print('\n');
 
 	// Quick hack
@@ -147,7 +151,7 @@ ISR(ADC_vect) {
 
 	// Start the next measurement ASAP to minimize drift caused by this ISR.
 	// Rotate between different analog inputs.
-	uint8_t cycle = v_accu[JUKSAUTIN].count & 0b111; // Cycle length: 8
+	uint8_t cycle = v_accu.juksautin.count & 0b111; // Cycle length: 8
 	switch (cycle) {
 	case 0:
 		// Internal temperature measurement
@@ -169,18 +173,18 @@ ISR(ADC_vect) {
 		pinMode(A1, juksautus ? OUTPUT : INPUT);
 
 		// Store measurement
-		store(&v_accu[K9_RAW], val);
+		store(&v_accu.k9_raw, val);
 
 		break;
 	case 8:
-		store(&v_accu[INT_TEMP], val);
+		store(&v_accu.int_temp, val);
 		break;
 	}
 
 	// What we really are interested is the ratio of pulldowns and total measurements.
 	// That allows us to calculate the real thermistor value while juksautus is happening.
 	// We calculate juksautus count by counting the periods of time the current is flowing.
-	store(&v_accu[JUKSAUTIN], juksautus);
+	store(&v_accu.juksautin, juksautus);
 }
 
 // Update cumulative analog value for access outside the ISR. Do not let it overflow.
