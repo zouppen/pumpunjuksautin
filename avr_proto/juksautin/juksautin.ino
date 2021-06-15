@@ -28,6 +28,7 @@ typedef struct accus_t {
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
 char serial_buf[SERIAL_BUF_LEN]; // Outgoing serial data
+volatile int serial_tx_i = 0; // Send buffer position
 
 // Set ADC source. Do not set above 15 because then you will overrun
 // other parts of ADMUX. A full list of possible inputs is available
@@ -61,6 +62,8 @@ void setup() {
 	while (!Serial) {
 		// wait for serial port to connect. Needed for native USB port only
 	}
+
+	UCSR0B |= (1<<TXCIE0); // transmit ready interrupt
 
 	set_voltage(0.5);
 
@@ -112,6 +115,13 @@ float accu_mean(accu_t *a) {
 // Processor loop
 void loop() {
 	static uint16_t i = ~0;
+
+	// Come here only after serial comms is finished.
+	int writing;
+	ATOMIC_BLOCK(ATOMIC_FORCEON) {
+		writing = serial_tx_i;
+	}
+	if (writing) return;
 	i++;
 
 	// Duplicate the data
@@ -134,7 +144,7 @@ void loop() {
 		serial_buf[SERIAL_BUF_LEN-2] = '\n';
 		serial_buf[SERIAL_BUF_LEN-1] = '\0';
 	}
-	Serial.print(serial_buf);
+	serial_flush();
 
 	// Quick hack
 	if (Serial.available() > 0) {
@@ -196,4 +206,27 @@ inline void store(accu_t *a, uint16_t val) {
 	if (a->count == ~0) return;
 	a->sum += val;
 	a->count++;
+}
+
+void serial_flush(void) {
+	ATOMIC_BLOCK(ATOMIC_FORCEON) {
+		UDR0 = serial_buf[0];
+		serial_tx_i = 1;
+	}
+}
+
+ISR(USART_TX_vect)
+{
+	// Don't go further if it has been already sent
+	if (serial_tx_i == 0) return;
+
+	char out = serial_buf[serial_tx_i];
+	UDR0 = out;
+
+	// Stop at NUL char
+	if (out == '\0') {
+		serial_tx_i = 0;
+	} else {
+		serial_tx_i++;
+	}
 }
