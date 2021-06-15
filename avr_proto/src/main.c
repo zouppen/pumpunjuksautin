@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <util/atomic.h>
+#include <avr/io.h>
+#include <util/setbaud.h>
 #include "pin.h"
 
 // Store analog measurement sum and measurement count. Used for mean
@@ -27,6 +29,8 @@ typedef struct {
 // Prototypes
 inline void store(volatile accu_t *a, uint16_t val);
 void serial_flush(void);
+static void init_uart(void);
+void loop(void);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 #define PIN_FB C,1
@@ -36,6 +40,25 @@ volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
 char serial_buf[SERIAL_BUF_LEN]; // Outgoing serial data
 volatile int serial_tx_i = 0; // Send buffer position
+
+static void init_uart(void)
+{
+	UBRR0H = UBRRH_VALUE;
+	UBRR0L = UBRRL_VALUE;
+#if USE_2X
+	UCSR0A |= (1 << U2X0);
+#else
+	UCSR0A &= ~(1 << U2X0);
+#endif
+
+	// Set frame format to 8 data bits, no parity, 1 stop bit
+	UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
+
+	UCSR0B |= (1<<TXEN0);  // Transmit enable
+	UCSR0B |= (1<<RXEN0);  // Receive enable
+	UCSR0B |= (1<<TXCIE0); // Transmit ready interrupt
+	UCSR0B |= (1<<RXCIE0); // Receive ready interrupt
+}
 
 // Set ADC source. Do not set above 15 because then you will overrun
 // other parts of ADMUX. A full list of possible inputs is available
@@ -63,14 +86,8 @@ void set_voltage(float u) {
 }
 
 // Initialization
-void setup() {
-	// Serial port setup
-	Serial.begin(9600);
-	while (!Serial) {
-		// wait for serial port to connect. Needed for native USB port only
-	}
-
-	UCSR0B |= (1<<TXCIE0); // transmit ready interrupt
+int main() {
+	init_uart();
 
 	set_voltage(0.5);
 
@@ -112,6 +129,10 @@ void setup() {
 	// Set FB pin as input
 	LOW(PIN_FB);
 	INPUT(PIN_FB);
+
+	while (true) {
+		loop();
+	}
 }
 
 // Take analog accumulator mean value
@@ -120,7 +141,7 @@ float accu_mean(accu_t *a) {
 }
 
 // Processor loop
-void loop() {
+void loop(void) {
 	static uint16_t i = ~0;
 
 	// Come here only after serial comms is finished.
@@ -158,11 +179,7 @@ void loop() {
 	serial_flush();
 
 	// Quick hack
-	if (Serial.available() > 0) {
-		float target = Serial.parseFloat();
-		while (Serial.read() != '\n');
-		set_voltage(target);
-	}
+	// TODO serial rx
 
 	// Whatever else you would normally have running in loop().
 }
