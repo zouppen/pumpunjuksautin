@@ -162,8 +162,8 @@ ISR(ADC_vect) {
 		break;
 	}
 
-	// Obtain previous result. Must read low first
-	uint16_t val = ADCL | (ADCH << 8);
+	// Obtain previous result.
+	uint16_t val = ADCW;
 
 	switch (port) {
 	case 0:
