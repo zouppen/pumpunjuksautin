@@ -1,4 +1,5 @@
 #include <util/atomic.h>
+#include "pin.h"
 
 // Pumpunjuksautin prototype for ATMega328p
 
@@ -21,6 +22,7 @@ typedef struct accus_t {
 };
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
+#define PIN_FB C,1
 
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
@@ -95,8 +97,9 @@ void setup() {
 	// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
 	start_adc_sourcing(8);
 
-	pinMode(A1, OUTPUT);
-	digitalWrite(A1, LOW);
+	// Set FB pin as input
+	LOW(PIN_FB);
+	INPUT(PIN_FB);
 }
 
 // Take analog accumulator mean value
@@ -170,7 +173,7 @@ ISR(ADC_vect) {
 	case 0:
 		// Pump logic. Pull capacitor down to target voltage.
 		juksautus = val > target;
-		pinMode(A1, juksautus ? OUTPUT : INPUT);
+		juksautus ? OUTPUT(PIN_FB) : INPUT(PIN_FB);
 
 		// Store measurement
 		store(&v_accu.k9_raw, val);
