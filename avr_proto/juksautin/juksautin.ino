@@ -1,11 +1,11 @@
-#include <util/atomic.h>
-#include "pin.h"
-
 // Pumpunjuksautin prototype for ATMega328p
 
 // Note, many macro values are defined in <avr/io.h> and
 // <avr/interrupts.h>, which are included automatically by
 // the Arduino interface
+
+#include <util/atomic.h>
+#include "pin.h"
 
 // Store analog measurement sum and measurement count. Used for mean
 // calculation.
@@ -23,9 +23,11 @@ typedef struct accus_t {
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 #define PIN_FB C,1
+#define SERIAL_BUF_LEN 40
 
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
+char serial_buf[SERIAL_BUF_LEN]; // Outgoing serial data
 
 // Set ADC source. Do not set above 15 because then you will overrun
 // other parts of ADMUX. A full list of possible inputs is available
@@ -125,16 +127,14 @@ void loop() {
 	float int_temp = (accu_mean(&accu.int_temp)-324.31)/1.22;
 	float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
 
-	Serial.print(i);
-	Serial.print(": ");
-	Serial.print(int_temp);
-	Serial.print("°C ");
-	Serial.print(k9_raw);
-	Serial.print("V ");
-	Serial.print(ratio*100);
-	Serial.print("% ");
-	Serial.print(accu.juksautin.count);
-	Serial.print('\n');
+	int wrote = snprintf(serial_buf, SERIAL_BUF_LEN, "%" PRIu16 ": %d°C %dmV %d%% %" PRIu16 "\n", i, (int)int_temp, (int)(k9_raw*1000), (int)(ratio*100), accu.juksautin.count);
+	
+	if (wrote >= SERIAL_BUF_LEN) {
+		// Ensuring endline in the end
+		serial_buf[SERIAL_BUF_LEN-2] = '\n';
+		serial_buf[SERIAL_BUF_LEN-1] = '\0';
+	}
+	Serial.print(serial_buf);
 
 	// Quick hack
 	if (Serial.available() > 0) {
