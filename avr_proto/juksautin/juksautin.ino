@@ -4,22 +4,29 @@
 // <avr/interrupts.h>, which are included automatically by
 // the Arduino interface
 
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
 #include <util/atomic.h>
 #include "pin.h"
 
 // Store analog measurement sum and measurement count. Used for mean
 // calculation.
-typedef struct accu_t {
+typedef struct {
 	uint32_t sum;
 	uint16_t count;
-};
+} accu_t;
 
 // Struct of accumulators.
-typedef struct accus_t {
+typedef struct {
 	accu_t k9_raw;    // Real voltage in K9
 	accu_t int_temp;  // AVR internal temperature
 	accu_t juksautin; // Juksautin ratio
-};
+} accus_t;
+
+// Prototypes
+inline void store(volatile accu_t *a, uint16_t val);
+void serial_flush(void);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 #define PIN_FB C,1
@@ -37,13 +44,13 @@ void start_adc_sourcing(uint8_t chan) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		// Clear MUX3..0 in ADMUX (0x7C) in preparation for setting the analog
 		// input
-		ADMUX &= B11110000;
+		ADMUX &= 0b11110000;
 
 		// Set MUX3..0 in ADMUX (0x7C) to select ADC input
 		ADMUX |= chan;
 
 		// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
-		ADCSRA |= B01000000;
+		ADCSRA |= 0b01000000;
 	}
 }
 
@@ -71,28 +78,28 @@ void setup() {
 
 	// clear ADLAR in ADMUX (0x7C) to right-adjust the result
 	// ADCL will contain lower 8 bits, ADCH upper 2 (in last two bits)
-	ADMUX &= B11011111;
+	ADMUX &= 0b11011111;
 
 	// Set REFS1..0 in ADMUX (0x7C) to change reference voltage to internal
 	// 1.1V reference
-	ADMUX |= B11000000;
+	ADMUX |= 0b11000000;
 
 	// Set ADEN in ADCSRA (0x7A) to enable the ADC.
 	// Note, this instruction takes 12 ADC clocks to execute
-	ADCSRA |= B10000000;
+	ADCSRA |= 0b10000000;
 
 	// Clear ADTS2..0 in ADCSRB (0x7B) to set trigger mode to free running.
 	// This means that as soon as an ADC has finished, the next will be
 	// immediately started.
-	ADCSRB &= B11111000;
+	ADCSRB &= 0b11111000;
 
 	// Set the Prescaler to 128 (16000KHz/128 = 125KHz)
 	// Above 200KHz 10-bit results are not reliable.
-	ADCSRA |= B00000111;
+	ADCSRA |= 0b00000111;
 
 	// Set ADIE in ADCSRA (0x7A) to enable the ADC interrupt.
 	// Without this, the internal interrupt will not trigger.
-	ADCSRA |= B00001000;
+	ADCSRA |= 0b00001000;
 
 	// Enable global interrupts
 	// AVR macro included in <avr/interrupts.h>, which the Arduino IDE
@@ -128,9 +135,13 @@ void loop() {
 	accus_t accu;
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
 		// The buffer is so small it makes more sense to use copying than
-		// front/back buffering at the moment
+		// front/back buffering at the moment.
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+		// We are safely fiddling with volatile, so we just
+		// turn off warnings at this stage.
 		memcpy(&accu, &v_accu, sizeof(accu));
 		memset(&v_accu, 0, sizeof(v_accu));
+#pragma GCC diagnostic pop
 	}
 
 	float ratio = accu_mean(&accu.juksautin);
@@ -160,7 +171,7 @@ void loop() {
 ISR(ADC_vect) {
 	static bool juksautus = false;
 	// Store the ADC port of previous measurement before changing it
-	uint8_t port = ADMUX & B00001111;
+	uint8_t port = ADMUX & 0b00001111;
 
 	// Start the next measurement ASAP to minimize drift caused by this ISR.
 	// Rotate between different analog inputs.
@@ -183,7 +194,11 @@ ISR(ADC_vect) {
 	case 0:
 		// Pump logic. Pull capacitor down to target voltage.
 		juksautus = val > target;
-		juksautus ? OUTPUT(PIN_FB) : INPUT(PIN_FB);
+		if (juksautus) {
+			OUTPUT(PIN_FB);
+		} else {
+			INPUT(PIN_FB);
+		}
 
 		// Store measurement
 		store(&v_accu.k9_raw, val);
@@ -201,7 +216,7 @@ ISR(ADC_vect) {
 }
 
 // Update cumulative analog value for access outside the ISR. Do not let it overflow.
-inline void store(accu_t *a, uint16_t val) {
+inline void store(volatile accu_t *a, uint16_t val) {
 	// Stop storing when full
 	if (a->count == ~0) return;
 	a->sum += val;
