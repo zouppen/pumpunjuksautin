@@ -23,8 +23,8 @@ set(PROG_DEV "/dev/ttyUSB0" CACHE STRING "Programmer device")
 # AVR Fuses, must be in concordance with your hardware and F_CPU
 # http://eleccelerator.com/fusecalc/fusecalc.php?chip=atmega328p
 set(E_FUSE 0xfd)
-set(H_FUSE 0xda)
-set(L_FUSE 0xfd)
+set(H_FUSE 0xde)
+set(L_FUSE 0xff)
 set(LOCK_BIT 0xff)
 
 # Use AVR GCC toolchain
@@ -66,13 +66,13 @@ add_custom_target(hex ALL avr-objcopy -R .eeprom -O ihex ${PRODUCT_NAME}.elf ${P
 add_custom_target(eeprom avr-objcopy -j .eeprom  --set-section-flags=.eeprom="alloc,load"  --change-section-lma .eeprom=0 -O ihex ${PRODUCT_NAME}.elf ${PRODUCT_NAME}.eep DEPENDS strip)
 
 # Upload the firmware with avrdude
-add_custom_target(upload avrdude -c ${PROG_TYPE} -b 57600 -P ${PROG_DEV} -p ${MCU} -U flash:w:${PRODUCT_NAME}.hex DEPENDS hex)
+add_custom_target(upload avrdude -c ${PROG_TYPE} -p ${MCU} -U flash:w:${PRODUCT_NAME}.hex DEPENDS hex)
 
 # Upload the eeprom with avrdude
 add_custom_target(upload_eeprom avrdude -c ${PROG_TYPE} -p ${MCU} -U eeprom:w:${PRODUCT_NAME}.eep DEPENDS eeprom)
 
 # Burn fuses
-add_custom_target(fuses avrdude -c ${PROG_TYPE} -p ${MCU} -U lfuse:w:${L_FUSE}:m -U hfuse:w:${H_FUSE}:m -U efuse:w:${E_FUSE}:m -U lock:w:${LOCK_BIT}:m )
+add_custom_target(fuses avrdude -c ${PROG_TYPE} -p ${MCU} -B 3 -U lfuse:w:${L_FUSE}:m -U hfuse:w:${H_FUSE}:m -U efuse:w:${E_FUSE}:m -U lock:w:${LOCK_BIT}:m )
 
 # Clean extra files
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PRODUCT_NAME}.hex;${PRODUCT_NAME}.eeprom;${PRODUCT_NAME}.lst")
