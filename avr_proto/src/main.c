@@ -190,6 +190,11 @@ void loop(void) {
 		// Prepare ping answer
 		strcpy(serial_tx, "PONG");
 		serial_tx_start();
+	} else if (strcmp(serial_rx, "LED") == 0) {
+		// Useful for testing if rx works because we see
+		// visual indication even if tx is bad.
+		TOGGLE(PIN_LED);
+		rx_toggle();
 	} else if (strcmp(serial_rx, "READ") == 0) {
 		// Duplicate the data
 		accus_t accu;
