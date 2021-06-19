@@ -1,3 +1,4 @@
+// -*- mode: c; c-file-style: "linux" -*-
 // Pumpunjuksautin prototype for ATMega328p
 
 // Note, many macro values are defined in <avr/io.h> and
@@ -10,8 +11,10 @@
 #include <util/atomic.h>
 #include <avr/io.h>
 #include <avr/sleep.h>
-#include <util/setbaud.h>
+
 #include "pin.h"
+#include "serial.h"
+#include "hardware_config.h"
 
 // Store analog measurement sum and measurement count. Used for mean
 // calculation.
@@ -29,56 +32,12 @@ typedef struct {
 
 // Prototypes
 inline void store(volatile accu_t *a, uint16_t val);
-void serial_tx_start(void);
-static void init_uart(void);
 void loop(void);
-void rx_toggle(void);
-void tx_toggle(void);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
-#define PIN_FB C,1
-#define PIN_TX_EN D,2
-#define PIN_LED D,3
-#define SERIAL_TX_LEN 40
-#define SERIAL_RX_LEN 30
 
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
-char serial_tx[SERIAL_TX_LEN]; // Outgoing serial data
-char serial_rx[SERIAL_RX_LEN]; // Incoming serial data
-volatile int serial_tx_i = 0; // Send buffer position
-volatile int serial_rx_i = 0; // Receive buffer position
-volatile bool msg_available = false; // Message available in input buffer
-
-void rx_toggle(void)
-{
-	UCSR0B ^= _BV(RXEN0);
-}
-
-void tx_toggle(void)
-{
-	TOGGLE(PIN_TX_EN);
-	TOGGLE(PIN_LED);
-}
-
-static void init_uart(void)
-{
-	UBRR0H = UBRRH_VALUE;
-	UBRR0L = UBRRL_VALUE;
-#if USE_2X
-	UCSR0A |= _BV(U2X0);
-#else
-	UCSR0A &= ~_BV(U2X0);
-#endif
-
-	// Set frame format to 8 data bits, no parity, 1 stop bit
-	UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
-
-	UCSR0B |= _BV(TXEN0);  // Tranmitter enabled
-	// Transmitter interrupts are enabled later.
-	rx_toggle();           // Receive enable
-	UCSR0B |= _BV(RXCIE0); // Receive ready interrupt
-}
 
 // Set ADC source. Do not set above 15 because then you will overrun
 // other parts of ADMUX. A full list of possible inputs is available
@@ -112,10 +71,9 @@ int main() {
 	INPUT(PIN_FB);
 
 	// Configure output pins
-	OUTPUT(PIN_TX_EN);
 	OUTPUT(PIN_LED);
 	
-	init_uart();
+	serial_init();
 
 	set_voltage(0.5);
 
@@ -169,33 +127,22 @@ float accu_mean(accu_t *a) {
 void loop(void) {
 	static uint16_t i = ~0;
 
-	// Come here only after serial comms is finished.
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		// Leave if nothing for us. This should be safe even
-		// inside ATOMIC_BLOCK, see:
-		// https://blog.oddbit.com/post/2019-02-01-atomicblock-magic-in-avrlibc/
-		if (!msg_available) return;
-
-		// OK, cleaning flag and turn off RX for a while to
-		// make sure we don't mess the buffer. TODO double
-		// buffering.
-		msg_available = false;
-		rx_toggle();
-	}
+	// Continue only if we have a new frame to parse-
+	char const * const rx_buf = serial_pull_message();
+	if (rx_buf == NULL) return;
 
 	i++;
 
 	// Parse command
-	if (strcmp(serial_rx, "PING") == 0) {
+	if (strcmp(rx_buf, "PING") == 0) {
 		// Prepare ping answer
 		strcpy(serial_tx, "PONG");
 		serial_tx_start();
-	} else if (strcmp(serial_rx, "LED") == 0) {
+	} else if (strcmp(rx_buf, "LED") == 0) {
 		// Useful for testing if rx works because we see
 		// visual indication even if tx is bad.
 		TOGGLE(PIN_LED);
-		rx_toggle();
-	} else if (strcmp(serial_rx, "READ") == 0) {
+	} else if (strcmp(rx_buf, "READ") == 0) {
 		// Duplicate the data
 		accus_t accu;
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
@@ -224,7 +171,6 @@ void loop(void) {
 		// Do not answer to unrelated messages. This is
 		// important to handle point-to-multipoint protocol:
 		// We are not answering packets not related to us.
-		rx_toggle(); // Turn receiver back on
 	}
 }
 
@@ -284,64 +230,3 @@ inline void store(volatile accu_t *a, uint16_t val) {
 	a->count++;
 }
 
-void serial_tx_start(void) {
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		tx_toggle();
-		serial_tx_i = 0;
-		UCSR0B |= _BV(UDRIE0); // Activate USART_UDRE_vect
-	}
-}
-
-// Transmit ready. This interrupt is activated only for the last byte
-// to handle RS-485 half-duplex handover.
-ISR(USART_TX_vect)
-{
-	// TX off, RX on.
-	tx_toggle();
-	rx_toggle();
-
-	// Disable this interrupt.
-	UCSR0B &= ~_BV(TXCIE0);
-}
-
-// Called when TX buffer is empty.
-ISR(USART_UDRE_vect)
-{
-	char out = serial_tx[serial_tx_i];
-
-	if (out == '\0') {
-		// Now it's the time to send last character.
-		UCSR0B |= _BV(TXCIE0); // Enable TX_vect
-		UCSR0B &= ~_BV(UDRIE0); // Disable this interrupt
-		UDR0 = '\n'; // Send newline instead of NUL
-	} else {
-		// Otherwise transmit
-		UDR0 = out;
-		serial_tx_i++;
-	}
-}
-
-ISR(USART_RX_vect)
-{
-	char in = UDR0;
-	bool fail = serial_rx_i == SERIAL_RX_LEN;
-	bool end = in == '\n';
-	msg_available = false;
-	if (fail) {
-		if (end) {
-			// Failure has NUL in the first byte
-			serial_rx[0] = '\0';
-			serial_rx_i = 0;
-		} else {
-			// Just ignore the byte until newline
-		}
-	} else if (end) {
-		// All strings are null-terminated
-		serial_rx[serial_rx_i] = '\0';
-		serial_rx_i = 0;
-		msg_available = true;
-	} else {
-		serial_rx[serial_rx_i] = in;
-		serial_rx_i++;
-	}
-}
