@@ -31,15 +31,30 @@ inline void store(volatile accu_t *a, uint16_t val);
 void serial_tx_start(void);
 static void init_uart(void);
 void loop(void);
+void rx_toggle(void);
+void tx_toggle(void);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 #define PIN_FB C,1
+#define PIN_TX_EN D,2
+#define PIN_LED D,3
 #define SERIAL_BUF_LEN 40
 
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
 char serial_buf[SERIAL_BUF_LEN]; // Outgoing serial data
 volatile int serial_tx_i = 0; // Send buffer position
+
+void rx_toggle(void)
+{
+	UCSR0B ^= _BV(RXEN0);
+}
+
+void tx_toggle(void)
+{
+	TOGGLE(PIN_TX_EN);
+	TOGGLE(PIN_LED);
+}
 
 static void init_uart(void)
 {
@@ -56,7 +71,7 @@ static void init_uart(void)
 
 	UCSR0B |= _BV(TXEN0);  // Tranmitter enabled
 	UCSR0B |= _BV(TXCIE0); // Transmit ready interrupt
-	UCSR0B |= _BV(RXEN0);  // Receive enable
+	rx_toggle();           // Receive enable
 	UCSR0B |= _BV(RXCIE0); // Receive ready interrupt
 }
 
@@ -91,6 +106,10 @@ int main() {
 	LOW(PIN_FB);
 	INPUT(PIN_FB);
 
+	// Configure output pins
+	OUTPUT(PIN_TX_EN);
+	OUTPUT(PIN_LED);
+	
 	init_uart();
 
 	set_voltage(0.5);
