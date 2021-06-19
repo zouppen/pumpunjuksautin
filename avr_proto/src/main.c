@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <util/atomic.h>
 #include <avr/io.h>
+#include <avr/sleep.h>
 #include <util/setbaud.h>
 #include "pin.h"
 
@@ -155,6 +156,7 @@ int main() {
 
 	while (true) {
 		loop();
+		sleep_mode();
 	}
 }
 
