@@ -47,6 +47,7 @@ char serial_tx[SERIAL_TX_LEN]; // Outgoing serial data
 char serial_rx[SERIAL_RX_LEN]; // Incoming serial data
 volatile int serial_tx_i = 0; // Send buffer position
 volatile int serial_rx_i = 0; // Receive buffer position
+volatile bool msg_available = false; // Message available in input buffer
 
 void rx_toggle(void)
 {
@@ -167,18 +168,22 @@ void loop(void) {
 	static uint16_t i = ~0;
 
 	// Come here only after serial comms is finished.
-	bool serial_active, empty_msg;
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		serial_active = serial_tx_i || serial_rx_i;
-		empty_msg = serial_rx[0] == '\0';
+		// Leave if nothing for us. This should be safe even
+		// inside ATOMIC_BLOCK, see:
+		// https://blog.oddbit.com/post/2019-02-01-atomicblock-magic-in-avrlibc/
+		if (!msg_available) return;
+
+		// OK, cleaning flag and turn off RX for a while to
+		// make sure we don't mess the buffer. TODO double
+		// buffering.
+		msg_available = false;
+		rx_toggle();
 	}
-	// Continue only if we have a message
-	if (serial_active || empty_msg) return;
 
 	i++;
 
 	// Parse command
-	rx_toggle(); // Make sure we don't mess the buffer. TODO double buffer handling
 	if (strcmp(serial_rx, "PING") == 0) {
 		// Prepare ping answer
 		strcpy(serial_tx, "PONG");
@@ -209,10 +214,11 @@ void loop(void) {
 		}
 		serial_tx_start();
 	} else {
-		// Invalid message. Ignore.
+		// Do not answer to unrelated messages. This is
+		// important to handle point-to-multipoint protocol:
+		// We are not answering packets not related to us.
+		rx_toggle(); // Turn receiver back on
 	}
-
-	// Whatever else you would normally have running in loop().
 }
 
 // Interrupt service routine for the ADC completion
@@ -313,6 +319,7 @@ ISR(USART_RX_vect)
 	char in = UDR0;
 	bool fail = serial_rx_i == SERIAL_RX_LEN;
 	bool end = in == '\n';
+	msg_available = false;
 	if (fail) {
 		if (end) {
 			// Failure has NUL in the first byte
@@ -325,6 +332,7 @@ ISR(USART_RX_vect)
 		// All strings are null-terminated
 		serial_rx[serial_rx_i] = '\0';
 		serial_rx_i = 0;
+		msg_available = true;
 	} else {
 		serial_rx[serial_rx_i] = in;
 		serial_rx_i++;
