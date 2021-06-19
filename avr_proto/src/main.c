@@ -28,7 +28,7 @@ typedef struct {
 
 // Prototypes
 inline void store(volatile accu_t *a, uint16_t val);
-void serial_flush(void);
+void serial_tx_start(void);
 static void init_uart(void);
 void loop(void);
 
@@ -176,7 +176,7 @@ void loop(void) {
 		serial_buf[SERIAL_BUF_LEN-2] = '\n';
 		serial_buf[SERIAL_BUF_LEN-1] = '\0';
 	}
-	serial_flush();
+	serial_tx_start();
 
 	// Quick hack
 	// TODO serial rx
@@ -240,7 +240,7 @@ inline void store(volatile accu_t *a, uint16_t val) {
 	a->count++;
 }
 
-void serial_flush(void) {
+void serial_tx_start(void) {
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
 		UDR0 = serial_buf[0];
 		serial_tx_i = 1;
