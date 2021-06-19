@@ -73,7 +73,7 @@ static void init_uart(void)
 	UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
 
 	UCSR0B |= _BV(TXEN0);  // Tranmitter enabled
-	UCSR0B |= _BV(TXCIE0); // Transmit ready interrupt
+	// Transmitter interrupts are enabled later.
 	rx_toggle();           // Receive enable
 	UCSR0B |= _BV(RXCIE0); // Receive ready interrupt
 }
@@ -274,27 +274,33 @@ inline void store(volatile accu_t *a, uint16_t val) {
 void serial_tx_start(void) {
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
 		tx_toggle();
-		UDR0 = serial_tx[0];
-		serial_tx_i = 1;
+		serial_tx_i = 0;
+		UCSR0B |= _BV(UDRIE0); // Activate USART_UDRE_vect
 	}
 }
 
+// Transmit ready. This interrupt is activated only for the last byte
+// to handle RS-485 half-duplex handover.
 ISR(USART_TX_vect)
 {
-	if (serial_tx_i == 0) {
-		// TX off, RX on
-		tx_toggle();
-		rx_toggle();
-		return;
-	}
+	// TX off, RX on.
+	tx_toggle();
+	rx_toggle();
 
+	// Disable this interrupt.
+	UCSR0B &= ~_BV(TXCIE0);
+}
+
+// Called when TX buffer is empty.
+ISR(USART_UDRE_vect)
+{
 	char out = serial_tx[serial_tx_i];
 
 	if (out == '\0') {
-		// Not turning transmitter off yet. Send trailing
-		// newline and wait for the TX to finish.
-		UDR0 = '\n';
-		serial_tx_i = 0;
+		// Now it's the time to send last character.
+		UCSR0B |= _BV(TXCIE0); // Enable TX_vect
+		UCSR0B &= ~_BV(UDRIE0); // Disable this interrupt
+		UDR0 = '\n'; // Send newline instead of NUL
 	} else {
 		// Otherwise transmit
 		UDR0 = out;
