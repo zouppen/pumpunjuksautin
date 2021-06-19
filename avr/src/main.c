@@ -1,4 +1,3 @@
-// -*- mode: c; c-file-style: "linux" -*-
 // Pumpunjuksautin prototype for ATMega328p
 
 // Note, many macro values are defined in <avr/io.h> and

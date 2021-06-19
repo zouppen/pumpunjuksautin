@@ -1,4 +1,4 @@
-// -*- mode: c; c-file-style: "linux" -*-
+// RS-485 interface
 
 #define SERIAL_TX_LEN 40
 
