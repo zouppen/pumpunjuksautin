@@ -87,6 +87,10 @@ void set_voltage(float u) {
 
 // Initialization
 int main() {
+	// FB pin is toggled between HI-Z and LOW, prepare it. Start with HI-Z.
+	LOW(PIN_FB);
+	INPUT(PIN_FB);
+
 	init_uart();
 
 	set_voltage(0.5);
@@ -125,10 +129,6 @@ int main() {
 
 	// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
 	start_adc_sourcing(8);
-
-	// Set FB pin as input
-	LOW(PIN_FB);
-	INPUT(PIN_FB);
 
 	while (true) {
 		loop();
