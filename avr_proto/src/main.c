@@ -38,12 +38,12 @@ void tx_toggle(void);
 #define PIN_FB C,1
 #define PIN_TX_EN D,2
 #define PIN_LED D,3
-#define SERIAL_BUF_LEN 40
+#define SERIAL_TX_LEN 40
 #define SERIAL_RX_LEN 30
 
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
-char serial_buf[SERIAL_BUF_LEN]; // Outgoing serial data
+char serial_tx[SERIAL_TX_LEN]; // Outgoing serial data
 char serial_rx[SERIAL_RX_LEN]; // Incoming serial data
 volatile int serial_tx_i = 0; // Send buffer position
 volatile int serial_rx_i = 0; // Receive buffer position
@@ -181,7 +181,7 @@ void loop(void) {
 	rx_toggle(); // Make sure we don't mess the buffer. TODO double buffer handling
 	if (strcmp(serial_rx, "PING") == 0) {
 		// Prepare ping answer
-		strcpy(serial_buf, "PONG");
+		strcpy(serial_tx, "PONG");
 		serial_tx_start();
 	} else if (strcmp(serial_rx, "READ") == 0) {
 		// Duplicate the data
@@ -201,12 +201,11 @@ void loop(void) {
 		float int_temp = (accu_mean(&accu.int_temp)-324.31)/1.22;
 		float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
 
-		int wrote = snprintf(serial_buf, SERIAL_BUF_LEN, "%" PRIu16 ": %d°C %dmV %d%% %" PRIu16, i, (int)int_temp, (int)(k9_raw*1000), (int)(ratio*100), accu.juksautin.count);
+		int wrote = snprintf(serial_tx, SERIAL_TX_LEN, "%" PRIu16 ": %d°C %dmV %d%% %" PRIu16, i, (int)int_temp, (int)(k9_raw*1000), (int)(ratio*100), accu.juksautin.count);
 	
-		if (wrote >= SERIAL_BUF_LEN) {
+		if (wrote >= SERIAL_TX_LEN) {
 			// Ensuring endline in the end
-			serial_buf[SERIAL_BUF_LEN-2] = '\n';
-			serial_buf[SERIAL_BUF_LEN-1] = '\0';
+			serial_tx[SERIAL_TX_LEN-1] = '\0';
 		}
 		serial_tx_start();
 	} else {
@@ -275,7 +274,7 @@ inline void store(volatile accu_t *a, uint16_t val) {
 void serial_tx_start(void) {
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
 		tx_toggle();
-		UDR0 = serial_buf[0];
+		UDR0 = serial_tx[0];
 		serial_tx_i = 1;
 	}
 }
@@ -289,7 +288,7 @@ ISR(USART_TX_vect)
 		return;
 	}
 
-	char out = serial_buf[serial_tx_i];
+	char out = serial_tx[serial_tx_i];
 
 	if (out == '\0') {
 		// Not turning transmitter off yet. Send trailing
