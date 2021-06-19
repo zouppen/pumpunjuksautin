@@ -46,18 +46,18 @@ static void init_uart(void)
 	UBRR0H = UBRRH_VALUE;
 	UBRR0L = UBRRL_VALUE;
 #if USE_2X
-	UCSR0A |= (1 << U2X0);
+	UCSR0A |= _BV(U2X0);
 #else
-	UCSR0A &= ~(1 << U2X0);
+	UCSR0A &= ~_BV(U2X0);
 #endif
 
 	// Set frame format to 8 data bits, no parity, 1 stop bit
 	UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
 
-	UCSR0B |= (1<<TXEN0);  // Transmit enable
-	UCSR0B |= (1<<RXEN0);  // Receive enable
-	UCSR0B |= (1<<TXCIE0); // Transmit ready interrupt
-	UCSR0B |= (1<<RXCIE0); // Receive ready interrupt
+	UCSR0B |= _BV(TXEN0);  // Tranmitter enabled
+	UCSR0B |= _BV(TXCIE0); // Transmit ready interrupt
+	UCSR0B |= _BV(RXEN0);  // Receive enable
+	UCSR0B |= _BV(RXCIE0); // Receive ready interrupt
 }
 
 // Set ADC source. Do not set above 15 because then you will overrun
