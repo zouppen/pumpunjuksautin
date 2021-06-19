@@ -39,11 +39,14 @@ void tx_toggle(void);
 #define PIN_TX_EN D,2
 #define PIN_LED D,3
 #define SERIAL_BUF_LEN 40
+#define SERIAL_RX_LEN 30
 
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
 char serial_buf[SERIAL_BUF_LEN]; // Outgoing serial data
+char serial_rx[SERIAL_RX_LEN]; // Incoming serial data
 volatile int serial_tx_i = 0; // Send buffer position
+volatile int serial_rx_i = 0; // Receive buffer position
 
 void rx_toggle(void)
 {
@@ -164,41 +167,51 @@ void loop(void) {
 	static uint16_t i = ~0;
 
 	// Come here only after serial comms is finished.
-	int writing;
+	bool serial_active, empty_msg;
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		writing = serial_tx_i;
+		serial_active = serial_tx_i || serial_rx_i;
+		empty_msg = serial_rx[0] == '\0';
 	}
-	if (writing) return;
+	// Continue only if we have a message
+	if (serial_active || empty_msg) return;
+
 	i++;
 
-	// Duplicate the data
-	accus_t accu;
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		// The buffer is so small it makes more sense to use copying than
-		// front/back buffering at the moment.
+	// Parse command
+	rx_toggle(); // Make sure we don't mess the buffer. TODO double buffer handling
+	if (strcmp(serial_rx, "PING") == 0) {
+		// Prepare ping answer
+		strcpy(serial_buf, "PONG");
+		serial_tx_start();
+	} else if (strcmp(serial_rx, "READ") == 0) {
+		// Duplicate the data
+		accus_t accu;
+		ATOMIC_BLOCK(ATOMIC_FORCEON) {
+			// The buffer is so small it makes more sense to use copying than
+			// front/back buffering at the moment.
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-		// We are safely fiddling with volatile, so we just
-		// turn off warnings at this stage.
-		memcpy(&accu, &v_accu, sizeof(accu));
-		memset(&v_accu, 0, sizeof(v_accu));
+			// We are safely fiddling with volatile, so we just
+			// turn off warnings at this stage.
+			memcpy(&accu, &v_accu, sizeof(accu));
+			memset(&v_accu, 0, sizeof(v_accu));
 #pragma GCC diagnostic pop
-	}
+		}
 
-	float ratio = accu_mean(&accu.juksautin);
-	float int_temp = (accu_mean(&accu.int_temp)-324.31)/1.22;
-	float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
+		float ratio = accu_mean(&accu.juksautin);
+		float int_temp = (accu_mean(&accu.int_temp)-324.31)/1.22;
+		float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
 
-	int wrote = snprintf(serial_buf, SERIAL_BUF_LEN, "%" PRIu16 ": %d°C %dmV %d%% %" PRIu16 "\n", i, (int)int_temp, (int)(k9_raw*1000), (int)(ratio*100), accu.juksautin.count);
+		int wrote = snprintf(serial_buf, SERIAL_BUF_LEN, "%" PRIu16 ": %d°C %dmV %d%% %" PRIu16, i, (int)int_temp, (int)(k9_raw*1000), (int)(ratio*100), accu.juksautin.count);
 	
-	if (wrote >= SERIAL_BUF_LEN) {
-		// Ensuring endline in the end
-		serial_buf[SERIAL_BUF_LEN-2] = '\n';
-		serial_buf[SERIAL_BUF_LEN-1] = '\0';
+		if (wrote >= SERIAL_BUF_LEN) {
+			// Ensuring endline in the end
+			serial_buf[SERIAL_BUF_LEN-2] = '\n';
+			serial_buf[SERIAL_BUF_LEN-1] = '\0';
+		}
+		serial_tx_start();
+	} else {
+		// Invalid message. Ignore.
 	}
-	serial_tx_start();
-
-	// Quick hack
-	// TODO serial rx
 
 	// Whatever else you would normally have running in loop().
 }
@@ -261,6 +274,7 @@ inline void store(volatile accu_t *a, uint16_t val) {
 
 void serial_tx_start(void) {
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
+		tx_toggle();
 		UDR0 = serial_buf[0];
 		serial_tx_i = 1;
 	}
@@ -268,16 +282,46 @@ void serial_tx_start(void) {
 
 ISR(USART_TX_vect)
 {
-	// Don't go further if it has been already sent
-	if (serial_tx_i == 0) return;
+	if (serial_tx_i == 0) {
+		// TX off, RX on
+		tx_toggle();
+		rx_toggle();
+		return;
+	}
 
 	char out = serial_buf[serial_tx_i];
-	UDR0 = out;
 
-	// Stop at NUL char
 	if (out == '\0') {
+		// Not turning transmitter off yet. Send trailing
+		// newline and wait for the TX to finish.
+		UDR0 = '\n';
 		serial_tx_i = 0;
 	} else {
+		// Otherwise transmit
+		UDR0 = out;
 		serial_tx_i++;
+	}
+}
+
+ISR(USART_RX_vect)
+{
+	char in = UDR0;
+	bool fail = serial_rx_i == SERIAL_RX_LEN;
+	bool end = in == '\n';
+	if (fail) {
+		if (end) {
+			// Failure has NUL in the first byte
+			serial_rx[0] = '\0';
+			serial_rx_i = 0;
+		} else {
+			// Just ignore the byte until newline
+		}
+	} else if (end) {
+		// All strings are null-terminated
+		serial_rx[serial_rx_i] = '\0';
+		serial_rx_i = 0;
+	} else {
+		serial_rx[serial_rx_i] = in;
+		serial_rx_i++;
 	}
 }
