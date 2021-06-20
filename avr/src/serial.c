@@ -48,11 +48,13 @@ void serial_init(void)
 	// Prepare for RS-485 half-duplex. Start in RX mode (LOW).
 	LOW(PIN_TX_EN);
 	OUTPUT(PIN_TX_EN);
-	
-	UCSR0B |= _BV(TXEN0);  // Tranmitter enabled
+
+	// Turn on all serial interrupts except UDRIE which is turned
+	// when we want to transmit.
+	UCSR0B |= _BV(TXEN0);  // Transmitter enable
+	UCSR0B |= _BV(TXCIE0); // Enable USART_TX_vect
 	UCSR0B |= _BV(RXEN0);  // Receive enable
-	UCSR0B |= _BV(RXCIE0); // Receive ready interrupt
-	// Transmitter interrupts are enabled later.
+	UCSR0B |= _BV(RXCIE0); // Enable USART_RX_vect
 }
 
 static void serial_rx_start(void)
@@ -110,8 +112,6 @@ ISR(USART_TX_vect)
 	// TX off, RX on.
 	serial_rx_start();
 
-	// Disable this interrupt.
-	UCSR0B &= ~_BV(TXCIE0);
 }
 
 // Called when there is opportunity to fill TX FIFO.
@@ -121,7 +121,6 @@ ISR(USART_UDRE_vect)
 
 	if (out == '\0') {
 		// Now it's the time to send last character.
-		UCSR0B |= _BV(TXCIE0); // Enable TX_vect
 		UCSR0B &= ~_BV(UDRIE0); // Disable this interrupt
 		UDR0 = '\n'; // Send newline instead of NUL
 	} else {
