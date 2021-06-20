@@ -1,4 +1,8 @@
 // RS-485 interface
+//
+// To understand what happens here, please read ATmega328p data sheet
+// chapter 19 (USART0) and ESPECIALLY subchapter 19.6.3 (Transmitter
+// Flags and Interrupts).
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -98,8 +102,9 @@ char const *serial_pull_message(void)
 	return ret;
 }
 
-// Transmit ready. This interrupt is activated only for the last byte
-// to handle RS-485 half-duplex handover.
+// Transmit finished. This interrupt is called after all data has been
+// sent (UDRE_vect no longer feeds data). In this interrupt the RS-485
+// is switched back to receive mode.
 ISR(USART_TX_vect)
 {
 	// TX off, RX on.
@@ -109,7 +114,7 @@ ISR(USART_TX_vect)
 	UCSR0B &= ~_BV(TXCIE0);
 }
 
-// Called when TX buffer is empty.
+// Called when there is opportunity to fill TX FIFO.
 ISR(USART_UDRE_vect)
 {
 	char out = serial_tx[serial_tx_i];
