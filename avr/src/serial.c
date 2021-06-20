@@ -70,14 +70,15 @@ void serial_tx_start(void) {
 	// Indicator only.
 	TOGGLE(PIN_LED);
 
-	// RS-485 direction change.
-	UCSR0B &= ~_BV(RXEN0);
-	HIGH(PIN_TX_EN);
-
-	// Rewind tx send index and then trigger TX by
-	// activating USART_UDRE_vect.
-	serial_tx_i = 0;
-	UCSR0B |= _BV(UDRIE0);
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		UCSR0B &= ~_BV(RXEN0);  // Receive disable
+		
+		// RS-485 direction change.
+		HIGH(PIN_TX_EN);
+		
+		// Let the TX interrupt run.
+		UCSR0B |= _BV(UDRIE0); // Enable USART_UDRE_vect
+	}
 }
 
 // Pulls message if any. The returned buffer is immutable.
