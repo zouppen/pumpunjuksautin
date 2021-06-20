@@ -30,7 +30,7 @@ typedef struct {
 } accus_t;
 
 // Prototypes
-inline void store(volatile accu_t *a, uint16_t val);
+void store(volatile accu_t *a, uint16_t val);
 void loop(void);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
@@ -222,7 +222,7 @@ ISR(ADC_vect) {
 }
 
 // Update cumulative analog value for access outside the ISR. Do not let it overflow.
-inline void store(volatile accu_t *a, uint16_t val) {
+void store(volatile accu_t *a, uint16_t val) {
 	// Stop storing when full
 	if (a->count == ~0) return;
 	a->sum += val;
