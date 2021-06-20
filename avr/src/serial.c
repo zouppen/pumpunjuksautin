@@ -55,8 +55,6 @@ void serial_tx_start(void) {
 	TOGGLE(PIN_LED);
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		UCSR0B &= ~_BV(RXEN0);  // Receive disable
-		
 		// RS-485 direction change.
 		HIGH(PIN_TX_EN);
 		
@@ -100,8 +98,6 @@ ISR(USART_TX_vect)
 
 	// RS-485 direction change.
 	LOW(PIN_TX_EN);
-
-	UCSR0B |= _BV(RXEN0);  // Receive enable
 }
 
 // Called when there is opportunity to fill TX FIFO.
