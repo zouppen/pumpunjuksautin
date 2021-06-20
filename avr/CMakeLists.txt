@@ -6,6 +6,16 @@ project("Pumpunjuksautin")
 # Product filename
 set(PRODUCT_NAME juksautin)
 
+# LTO check
+include(CheckIPOSupported)
+check_ipo_supported(RESULT lto_supported OUTPUT error)
+if( lto_supported )
+    message(STATUS "IPO / LTO enabled")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+    message(STATUS "IPO / LTO not supported: <${error}>")
+endif()
+
 ## AVR Chip Configuration
 # 8Mhz, this should match the crystal on your board,
 # I use 8Mhz and 3.3V for the lowest power consumption
@@ -43,8 +53,8 @@ set(CMAKE_EXE_LINKER_FLAGS -mmcu=${MCU})
 
 add_compile_options(
     -mmcu=${MCU} # MCU
-    -std=gnu99 # C99 standard
-    -Os # optimize
+    -std=gnu11 # C17 standard
+    -O2 # optimize
     -Wall # enable warnings
 )
 file(GLOB SRC_FILES "src/*.c") # Load all files in src folder
