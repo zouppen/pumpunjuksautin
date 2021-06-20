@@ -42,11 +42,7 @@ void serial_init(void)
 	UCSR0A &= ~_BV(U2X0);
 #endif
 
-	// Set frame format to 8 data bits, no parity, 1 stop bit
-	UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
-
 	// Prepare for RS-485 half-duplex. Start in RX mode (LOW).
-	LOW(PIN_TX_EN);
 	OUTPUT(PIN_TX_EN);
 
 	// Turn on all serial interrupts except UDRIE which is turned
