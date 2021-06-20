@@ -14,12 +14,12 @@
 char serial_tx[SERIAL_TX_LEN]; // Outgoing serial data
 
 // Double buffering for rx
-char serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
-char serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
-char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
+static char serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
+static char serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
+static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
 
-volatile int serial_tx_i = 0; // Send buffer position
-volatile int serial_rx_i = 0; // Receive buffer position
+static int serial_tx_i = 0; // Send buffer position
+static int serial_rx_i = 0; // Receive buffer position
 static volatile bool may_flip = false; // Back buffer has a frame
 
 // Start half-duplex receiver (disable rx).
