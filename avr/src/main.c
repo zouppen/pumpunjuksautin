@@ -170,6 +170,10 @@ void loop(void) {
 		// Do not answer to unrelated messages. This is
 		// important to handle point-to-multipoint protocol:
 		// We are not answering packets not related to us.
+
+		// Dump everything. This is temporary. TODO
+		snprintf(serial_tx, SERIAL_TX_LEN, "Alkaa %02hhx %02hhx %02hhx.", rx_buf[0], rx_buf[1], rx_buf[2]);
+		serial_tx_start();
 	}
 }
 
