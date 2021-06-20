@@ -26,9 +26,6 @@ static int serial_tx_i = 0; // Send buffer position
 static int serial_rx_i = 0; // Receive buffer position
 static volatile bool may_flip = false; // Back buffer has a frame
 
-// Start half-duplex receiver (disable rx).
-static void serial_rx_start(void);
-
 void serial_init(void)
 {
 	// Initialize UART. Baud rate is defined by CMake variable
@@ -51,19 +48,6 @@ void serial_init(void)
 	UCSR0B |= _BV(TXCIE0); // Enable USART_TX_vect
 	UCSR0B |= _BV(RXEN0);  // Receive enable
 	UCSR0B |= _BV(RXCIE0); // Enable USART_RX_vect
-}
-
-static void serial_rx_start(void)
-{
-	// Indicator only.
-	TOGGLE(PIN_LED);
-
-	// Invalidate old receive buffer
-	may_flip = false;
-	
-	// RS-485 direction change.
-	LOW(PIN_TX_EN);
-	UCSR0B |= _BV(RXEN0);
 }
 
 void serial_tx_start(void) {
@@ -106,9 +90,18 @@ char const *serial_pull_message(void)
 // is switched back to receive mode.
 ISR(USART_TX_vect)
 {
-	// TX off, RX on.
-	serial_rx_start();
+	// Indicator only.
+	TOGGLE(PIN_LED);
 
+	// Invalidate old receive and transmit buffers.
+	may_flip = false;
+	serial_rx_i = 0;
+	serial_tx_i = 0;
+
+	// RS-485 direction change.
+	LOW(PIN_TX_EN);
+
+	UCSR0B |= _BV(RXEN0);  // Receive enable
 }
 
 // Called when there is opportunity to fill TX FIFO.
