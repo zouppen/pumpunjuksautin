@@ -26,9 +26,7 @@ set(MCU atmega328p)
 # Default Baudrate for UART, read avr include/util/setbaud.h for usage
 set(BAUD 9600 CACHE STRING "Serial port baud rate")
 # The programmer to use, read avrdude manual for list
-set(PROG_TYPE arduino CACHE STRING "Programmer type in avrdude")
-# Programmer arguments
-set(PROG_DEV "/dev/ttyUSB0" CACHE STRING "Programmer device")
+set(PROG_TYPE usbasp CACHE STRING "Programmer type in avrdude")
 
 # AVR Fuses, must be in concordance with your hardware and F_CPU
 # http://eleccelerator.com/fusecalc/fusecalc.php?chip=atmega328p
