@@ -295,8 +295,8 @@ $Comp
 L Interface_UART:SP3485EN U1
 U 1 1 60BB9B57
 P 3750 1850
-F 0 "U1" H 3650 2400 50  0000 C CNN
-F 1 "SP3485EN" H 3500 2300 50  0000 C CNN
+F 0 "U1" H 3800 2400 50  0000 L CNN
+F 1 "SP3485EN" H 3800 2300 50  0000 L CNN
 F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 4800 1500 50  0001 C CIN
 F 3 "http://www.icbase.com/pdf/SPX/SPX00480106.pdf" H 3750 1850 50  0001 C CNN
 F 4 "C8963" H 3750 1850 50  0001 C CNN "LCSC"
@@ -464,7 +464,7 @@ $EndComp
 Text Label 3050 1650 0    50   ~ 0
 RX
 Wire Wire Line
-	3050 1650 3350 1650
+	3050 1650 3200 1650
 Text Label 3050 2050 0    50   ~ 0
 TX
 Wire Wire Line
@@ -488,28 +488,6 @@ Wire Wire Line
 	1150 5750 1150 5700
 Text Label 9450 3050 0    50   ~ 0
 RESET
-$Comp
-L power:GND #PWR0102
-U 1 1 60EDAA2A
-P 4850 4150
-F 0 "#PWR0102" H 4850 3900 50  0001 C CNN
-F 1 "GND" H 4855 3977 50  0000 C CNN
-F 2 "" H 4850 4150 50  0001 C CNN
-F 3 "" H 4850 4150 50  0001 C CNN
-	1    4850 4150
-	1    0    0    -1  
-$EndComp
-$Comp
-L Jumper:SolderJumper_2_Open JP1
-U 1 1 60EE7989
-P 4850 4000
-F 0 "JP1" V 4804 4068 50  0000 L CNN
-F 1 "Reset pad" V 4895 4068 50  0000 L CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 4850 4000 50  0001 C CNN
-F 3 "~" H 4850 4000 50  0001 C CNN
-	1    4850 4000
-	0    1    1    0   
-$EndComp
 Wire Wire Line
 	7600 1550 8250 1550
 Wire Wire Line
@@ -690,15 +668,12 @@ Wire Wire Line
 Wire Wire Line
 	9150 850  8850 850 
 Connection ~ 8850 850 
-Connection ~ 4850 3800
 Text Label 5150 3800 2    50   ~ 0
 RESET
 Wire Wire Line
 	4850 3800 5150 3800
 Text Label 3400 4050 0    50   ~ 0
 RESET
-Wire Wire Line
-	4850 3850 4850 3800
 NoConn ~ 9450 3650
 NoConn ~ 9450 3750
 NoConn ~ 9450 2950
@@ -932,4 +907,24 @@ F 4 "C13585" H 2350 1900 50  0001 C CNN "LCSC"
 	-1   0    0    -1  
 $EndComp
 Connection ~ 2350 1750
+$Comp
+L Device:R R8
+U 1 1 60D023E7
+P 3200 1450
+F 0 "R8" H 3130 1496 50  0000 R CNN
+F 1 "10k" H 3130 1405 50  0000 R CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 3130 1450 50  0001 C CNN
+F 3 "~" H 3200 1450 50  0001 C CNN
+F 4 "C25804" H 3200 1450 50  0001 C CNN "LCSC"
+	1    3200 1450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3200 1600 3200 1650
+Connection ~ 3200 1650
+Wire Wire Line
+	3200 1650 3350 1650
+Wire Wire Line
+	3200 1300 3750 1300
+Connection ~ 3750 1300
 $EndSCHEMATC
