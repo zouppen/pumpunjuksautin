@@ -8,6 +8,9 @@ extern char serial_tx[SERIAL_TX_LEN];
 // Initialize serial port.
 void serial_init(void);
 
+// Is serial transmitter on?
+bool serial_is_transmitting(void);
+
 // Gets a message from serial receive buffer, if any.
 char const *serial_pull_message(void);
 

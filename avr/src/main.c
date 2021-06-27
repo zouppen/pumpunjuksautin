@@ -124,7 +124,9 @@ float accu_mean(accu_t *a) {
 void loop(void) {
 	static uint16_t i = ~0;
 
-	// Continue only if we have a new frame to parse-
+	// Continue only if transmitter is idle and we have a new
+	// frame to parse.
+	if (serial_is_transmitting()) return;
 	char const *const rx_buf = serial_pull_message();
 	if (rx_buf == NULL) return;
 

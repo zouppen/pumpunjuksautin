@@ -50,6 +50,10 @@ void serial_init(void)
 		_BV(TXCIE0);  // Enable USART_TX_vect
 }
 
+bool serial_is_transmitting(void) {
+	return serial_tx_i != 0;
+}
+
 void serial_tx_start(void) {
 	// Indicator only.
 	TOGGLE(PIN_LED);
