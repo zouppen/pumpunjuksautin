@@ -177,8 +177,24 @@ void loop(void) {
 		// important to handle point-to-multipoint protocol:
 		// We are not answering packets not related to us.
 
-		// Dump everything. This is temporary. TODO
-		snprintf(serial_tx, SERIAL_TX_LEN, "Alkaa %02hhx %02hhx %02hhx.", rx_buf[0], rx_buf[1], rx_buf[2]);
+		// Dump everything. This is temporary to ease debugging.
+		char *out = serial_tx;
+		strcpy(serial_tx, "Invalid data: ");
+		out += 14;
+
+		for (int i=0; rx_buf[i] != '\0'; i++) {
+			out += snprintf(out, serial_tx + SERIAL_TX_LEN - out, "%02hhx ", rx_buf[i]);
+
+			if (serial_tx + SERIAL_TX_LEN - out <= 0) {
+				// Ensure it's null terminated and stop!
+				serial_tx[SERIAL_TX_LEN-3] = '.';
+				serial_tx[SERIAL_TX_LEN-2] = '.';
+				serial_tx[SERIAL_TX_LEN-1] = '\0';
+				break;
+			}
+		}
+
+		_delay_us(100);
 		serial_tx_start();
 	}
 }
