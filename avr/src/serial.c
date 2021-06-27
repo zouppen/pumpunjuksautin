@@ -22,8 +22,8 @@ static char serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
 static char serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
 static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
 
-static int serial_tx_i = 0; // Send buffer position
 static int serial_rx_i = 0; // Receive buffer position
+static int serial_tx_i = 0; // Send buffer position
 static volatile bool may_flip = false; // Back buffer has a frame
 
 void serial_init(void)
@@ -44,10 +44,10 @@ void serial_init(void)
 
 	// Turn on all serial interrupts except UDRIE which is turned
 	// when we want to transmit.
-	UCSR0B |= _BV(TXEN0);  // Transmitter enable
-	UCSR0B |= _BV(TXCIE0); // Enable USART_TX_vect
-	UCSR0B |= _BV(RXEN0);  // Receive enable
-	UCSR0B |= _BV(RXCIE0); // Enable USART_RX_vect
+	UCSR0B = _BV(RXEN0) | // Receive enable
+		_BV(RXCIE0) | // Enable USART_RX_vect
+		_BV(TXEN0)  | // Transmitter enable
+		_BV(TXCIE0);  // Enable USART_TX_vect
 }
 
 void serial_tx_start(void) {
@@ -91,9 +91,7 @@ ISR(USART_TX_vect)
 	// Indicator only.
 	TOGGLE(PIN_LED);
 
-	// Invalidate old receive and transmit buffers.
-	may_flip = false;
-	serial_rx_i = 0;
+	// Rollback transmit buffer.
 	serial_tx_i = 0;
 
 	// RS-485 direction change.

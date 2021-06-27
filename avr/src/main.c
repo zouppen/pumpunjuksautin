@@ -103,13 +103,11 @@ int main() {
 	// Without this, the internal interrupt will not trigger.
 	ADCSRA |= 0b00001000;
 
-	// Enable global interrupts
-	// AVR macro included in <avr/interrupts.h>, which the Arduino IDE
-	// supplies by default.
-	sei();
-
 	// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
 	start_adc_sourcing(8);
+
+	// Enable global interrupts.
+	sei();
 
 	while (true) {
 		loop();
@@ -127,7 +125,7 @@ void loop(void) {
 	static uint16_t i = ~0;
 
 	// Continue only if we have a new frame to parse-
-	char const * const rx_buf = serial_pull_message();
+	char const *const rx_buf = serial_pull_message();
 	if (rx_buf == NULL) return;
 
 	i++;
