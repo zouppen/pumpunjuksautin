@@ -16,22 +16,22 @@ $EndDescr
 $Comp
 L power:GND #PWR0101
 U 1 1 60C357A5
-P 3750 2250
-F 0 "#PWR0101" H 3750 2000 50  0001 C CNN
-F 1 "GND" H 3755 2077 50  0000 C CNN
-F 2 "" H 3750 2250 50  0001 C CNN
-F 3 "" H 3750 2250 50  0001 C CNN
-	1    3750 2250
+P 3750 2300
+F 0 "#PWR0101" H 3750 2050 50  0001 C CNN
+F 1 "GND" H 3755 2127 50  0000 C CNN
+F 2 "" H 3750 2300 50  0001 C CNN
+F 3 "" H 3750 2300 50  0001 C CNN
+	1    3750 2300
 	1    0    0    -1  
 $EndComp
 Text Notes 4800 6150 0    50   ~ 0
 LOW/HIGH/HI-Z\nemulates NTC
 Wire Wire Line
-	3350 1950 3300 1950
+	3350 2000 3300 2000
 Wire Wire Line
-	3350 1750 3300 1750
+	3350 1800 3300 1800
 Wire Wire Line
-	3300 1750 3300 1850
+	3300 1800 3300 1900
 Wire Wire Line
 	5650 5850 5650 5950
 $Comp
@@ -75,7 +75,7 @@ F 3 "" H 5650 6350 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3750 1450 3750 1300
+	3750 1500 3750 1350
 $Comp
 L power:VCC #PWR0107
 U 1 1 60C357A9
@@ -95,9 +95,9 @@ Text GLabel 1600 3900 3    50   UnSpc ~ 0
 K9
 Text GLabel 1500 3900 3    50   UnSpc ~ 0
 K9
-Text GLabel 4150 1750 2    50   3State ~ 0
+Text GLabel 4150 1800 2    50   3State ~ 0
 A
-Text GLabel 4150 1950 2    50   3State ~ 0
+Text GLabel 4150 2000 2    50   3State ~ 0
 B
 Wire Wire Line
 	5500 5850 5650 5850
@@ -135,9 +135,9 @@ Wire Notes Line
 	1950 3050 850  3050
 Text Notes 850  3000 0    50   ~ 0
 Screw terminal
-Connection ~ 3300 1850
+Connection ~ 3300 1900
 Wire Wire Line
-	3300 1850 3300 1950
+	3300 1900 3300 2000
 Wire Notes Line
 	2800 1000 4450 1000
 Wire Notes Line
@@ -294,13 +294,13 @@ $EndComp
 $Comp
 L Interface_UART:SP3485EN U1
 U 1 1 60BB9B57
-P 3750 1850
+P 3750 1900
 F 0 "U1" H 3800 2400 50  0000 L CNN
 F 1 "SP3485EN" H 3800 2300 50  0000 L CNN
-F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 4800 1500 50  0001 C CIN
-F 3 "http://www.icbase.com/pdf/SPX/SPX00480106.pdf" H 3750 1850 50  0001 C CNN
-F 4 "C8963" H 3750 1850 50  0001 C CNN "LCSC"
-	1    3750 1850
+F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 4800 1550 50  0001 C CIN
+F 3 "http://www.icbase.com/pdf/SPX/SPX00480106.pdf" H 3750 1900 50  0001 C CNN
+F 4 "C8963" H 3750 1900 50  0001 C CNN "LCSC"
+	1    3750 1900
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -461,24 +461,24 @@ F 4 "C8218" H 1150 5550 50  0001 C CNN "LCSC"
 	1    1150 5550
 	1    0    0    -1  
 $EndComp
-Text Label 3050 1650 0    50   ~ 0
+Text Label 3050 1700 0    50   ~ 0
 RX
 Wire Wire Line
-	3050 1650 3200 1650
-Text Label 3050 2050 0    50   ~ 0
+	3050 1700 3200 1700
+Text Label 3050 2100 0    50   ~ 0
 TX
 Wire Wire Line
-	3050 2050 3350 2050
+	3050 2100 3350 2100
 Text Label 9450 3250 0    50   ~ 0
 RX
 Text Label 9450 3350 0    50   ~ 0
 TX
 Text Label 9450 3450 0    50   ~ 0
 TX_EN
-Text Label 3050 1850 0    50   ~ 0
+Text Label 3050 1900 0    50   ~ 0
 TX_EN
 Wire Wire Line
-	3050 1850 3300 1850
+	3050 1900 3300 1900
 Text Label 1150 5400 0    50   ~ 0
 PUMPFAIL_M
 Wire Wire Line
@@ -910,21 +910,23 @@ Connection ~ 2350 1750
 $Comp
 L Device:R R8
 U 1 1 60D023E7
-P 3200 1450
-F 0 "R8" H 3130 1496 50  0000 R CNN
-F 1 "10k" H 3130 1405 50  0000 R CNN
-F 2 "Resistor_SMD:R_0603_1608Metric" V 3130 1450 50  0001 C CNN
-F 3 "~" H 3200 1450 50  0001 C CNN
-F 4 "C25804" H 3200 1450 50  0001 C CNN "LCSC"
-	1    3200 1450
+P 3200 1500
+F 0 "R8" H 3130 1546 50  0000 R CNN
+F 1 "20k" H 3130 1455 50  0000 R CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 3130 1500 50  0001 C CNN
+F 3 "~" H 3200 1500 50  0001 C CNN
+F 4 "C4184" H 3200 1500 50  0001 C CNN "LCSC"
+	1    3200 1500
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3200 1600 3200 1650
-Connection ~ 3200 1650
+	3200 1650 3200 1700
+Connection ~ 3200 1700
 Wire Wire Line
-	3200 1650 3350 1650
+	3200 1700 3350 1700
 Wire Wire Line
-	3200 1300 3750 1300
-Connection ~ 3750 1300
+	3200 1350 3750 1350
+Connection ~ 3750 1350
+Wire Wire Line
+	3750 1300 3750 1350
 $EndSCHEMATC
