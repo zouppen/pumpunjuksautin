@@ -10,6 +10,7 @@
 #include <util/atomic.h>
 #include <avr/io.h>
 #include <avr/sleep.h>
+#include <util/delay.h>
 
 #include "pin.h"
 #include "serial.h"
@@ -134,6 +135,11 @@ void loop(void) {
 
 	// Parse command
 	if (strcmp(rx_buf, "PING") == 0) {
+		// strcpy is too quick and many RS-485 transceivers
+		// are not doing tx/rx handover quickly enough. Add
+		// some delay as a hack.
+		_delay_us(100);
+
 		// Prepare ping answer
 		strcpy(serial_tx, "PONG");
 		serial_tx_start();
