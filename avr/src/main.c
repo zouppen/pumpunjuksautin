@@ -14,6 +14,7 @@
 
 #include "pin.h"
 #include "serial.h"
+#include "clock.h"
 #include "hardware_config.h"
 
 // Store analog measurement sum and measurement count. Used for mean
@@ -72,8 +73,10 @@ int main() {
 
 	// Configure output pins
 	OUTPUT(PIN_LED);
-	
+
+	// Initialize modules.
 	serial_init();
+	clock_init();
 
 	set_voltage(0.5);
 
@@ -124,6 +127,8 @@ float accu_mean(accu_t *a) {
 // Processor loop
 void loop(void) {
 	static uint16_t i = ~0;
+	time_t now;
+	int zone_h, zone_m;
 
 	// Continue only if transmitter is idle and we have a new
 	// frame to parse.
@@ -172,6 +177,15 @@ void loop(void) {
 			serial_tx[SERIAL_TX_LEN-1] = '\0';
 		}
 		serial_tx_start();
+	} else if (strcmp(rx_buf, "TIME") == 0) {
+		// Get time
+		time(&now);
+		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&now));
+		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
+		serial_tx_start();
+	} else if (sscanf(rx_buf, "TIME %lu%3d%d", &now, &zone_h, &zone_m) == 3) {
+		// Set time
+		clock_set(now, ((int32_t)zone_h*60+zone_m)*60);
 	} else {
 		// Do not answer to unrelated messages. This is
 		// important to handle point-to-multipoint protocol:
