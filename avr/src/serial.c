@@ -10,6 +10,7 @@
 #include <util/setbaud.h>
 
 #include "serial.h"
+#include "clock.h"
 #include "pin.h"
 #include "hardware_config.h"
 
@@ -25,6 +26,11 @@ static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
 static int serial_rx_i = 0; // Receive buffer position
 static int serial_tx_i = 0; // Send buffer position
 static volatile bool may_flip = false; // Back buffer has a frame
+static volatile bool rx_idle = true; // Is the remote end having a pause
+static volatile bool tx_state = false; // Is tx start requested
+
+// Static prototypes
+static void transmit_now(void);
 
 void serial_init(void)
 {
@@ -51,10 +57,31 @@ void serial_init(void)
 }
 
 bool serial_is_transmitting(void) {
-	return serial_tx_i != 0;
+	return tx_state;
 }
 
+// Many RS-485 transceivers are not doing tx/rx handover quickly
+// enough. Make sure the receiver has been idle before starting.
 void serial_tx_start(void) {
+	// Serial has to be idle before sending, so start only RX has
+	// been silent.
+	tx_state = true;
+	if (rx_idle) transmit_now();
+}
+
+// Callback when it's safe to start transmitting
+ISR(TIMER2_COMPB_vect) {
+	// Timer is oneshot, cancel timer
+	TIMSK2 &= ~_BV(OCIE2B);
+
+	// RX is idle but start transmit only if it has been
+	// requested.
+	rx_idle = true;
+	if (tx_state) transmit_now();
+}
+
+void transmit_now()
+{
 	// Indicator only.
 	TOGGLE(PIN_LED);
 
@@ -100,6 +127,9 @@ ISR(USART_TX_vect)
 
 	// RS-485 direction change.
 	LOW(PIN_TX_EN);
+
+	// Ready to transmit again.
+	tx_state = false;
 }
 
 // Called when there is opportunity to fill TX FIFO.
@@ -121,6 +151,11 @@ ISR(USART_UDRE_vect)
 // Called when data available from serial.
 ISR(USART_RX_vect)
 {
+	// Make the timeout longer if remote end doesn't do rx/tx
+	// switch quickly enough.
+	clock_arm_timer(20);
+	rx_idle = false;
+
 	char in = UDR0;
 	bool fail = serial_rx_i == SERIAL_RX_LEN;
 	bool end = in == '\n';
