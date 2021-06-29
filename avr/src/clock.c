@@ -17,7 +17,7 @@
 #define TOP_A 250 // Counter TOP value in OCR2A
 #define TOP_B 250 // Software divider
 
-static volatile uint8_t counter_b = 0;
+static volatile uint8_t counter_b = TOP_B;
 static bool is_set = false;
 
 void clock_init(void)
@@ -53,10 +53,9 @@ bool clock_is_set(void)
 // Timer interrupt increments counter_b until full second is elapsed.
 ISR(TIMER2_COMPA_vect)
 {
-	if (counter_b == TOP_B-1) {
+	counter_b--;
+	if (counter_b == 0) {
 		system_tick();
-		counter_b = 0;
-	} else {
-		counter_b++;
+		counter_b = TOP_B;
 	}
 }
