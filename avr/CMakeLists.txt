@@ -51,9 +51,10 @@ set(CMAKE_EXE_LINKER_FLAGS -mmcu=${MCU})
 
 add_compile_options(
     -mmcu=${MCU} # MCU
-    -std=gnu11 # C17 standard
+    -std=gnu11 # C11 standard
     -O2 # optimize
     -Wall # enable warnings
+    -fshort-enums # Make enums as short as possible
 )
 file(GLOB SRC_FILES "src/*.c") # Load all files in src folder
 
