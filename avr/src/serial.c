@@ -10,6 +10,7 @@
 #include <util/setbaud.h>
 
 #include "serial.h"
+#include "clock.h"
 #include "pin.h"
 #include "hardware_config.h"
 
@@ -25,6 +26,12 @@ static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
 static int serial_rx_i = 0; // Receive buffer position
 static int serial_tx_i = 0; // Send buffer position
 static volatile bool may_flip = false; // Back buffer has a frame
+static volatile bool rx_idle = true; // Is the remote end having a pause
+static volatile bool tx_state = false; // Is our transmit buffer ready
+
+// Static prototypes
+static void serial_tx_start_real(void);
+void serial_rx_idle(void);
 
 void serial_init(void)
 {
@@ -48,13 +55,29 @@ void serial_init(void)
 		_BV(RXCIE0) | // Enable USART_RX_vect
 		_BV(TXEN0)  | // Transmitter enable
 		_BV(TXCIE0);  // Enable USART_TX_vect
+
+	clock_setup_timer(0, serial_rx_idle);
 }
 
 bool serial_is_transmitting(void) {
-	return serial_tx_i != 0;
+	return tx_state;
 }
 
+// Many RS-485 transceivers are not doing tx/rx handover quickly
+// enough. Make sure the receiver has been idle before starting.
 void serial_tx_start(void) {
+	// Serial has to be idle before sending.
+	tx_state = true;
+	if (rx_idle) serial_tx_start_real();
+}
+
+void serial_rx_idle(void) {
+	// Start sending if it's queued.
+	rx_idle = true;
+	if (tx_state) serial_tx_start_real();
+}
+
+static void serial_tx_start_real(void) {
 	// Indicator only.
 	TOGGLE(PIN_LED);
 
@@ -100,6 +123,9 @@ ISR(USART_TX_vect)
 
 	// RS-485 direction change.
 	LOW(PIN_TX_EN);
+
+	// Ready to transmit again.
+	tx_state = false;
 }
 
 // Called when there is opportunity to fill TX FIFO.
@@ -121,6 +147,10 @@ ISR(USART_UDRE_vect)
 // Called when data available from serial.
 ISR(USART_RX_vect)
 {
+	// Reset RX idle timeout
+	rx_idle = false;
+	clock_arm_timer(0, 0);
+
 	char in = UDR0;
 	bool fail = serial_rx_i == SERIAL_RX_LEN;
 	bool end = in == '\n';

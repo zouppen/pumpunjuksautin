@@ -17,7 +17,13 @@
 #define TOP_A 250 // Counter TOP value in OCR2A
 #define TOP_B 250 // Software divider
 
+typedef struct {
+	callback_t callback;
+	uint8_t timeout;
+} oneshot_t;
+
 static volatile uint8_t counter_b = TOP_B;
+static oneshot_t oneshot[ONESHOT_COUNT];
 static bool is_set = false;
 
 void clock_init(void)
@@ -50,12 +56,41 @@ bool clock_is_set(void)
 	return is_set;
 }
 
+void clock_setup_timer(int slot, callback_t callback)
+{
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		oneshot[slot].callback = callback;
+		oneshot[slot].timeout = 0;
+	}
+}
+
+void clock_arm_timer(int slot, uint16_t timeout_ms)
+{
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		// Timer decrements every 4 milliseconds
+		oneshot[slot].timeout = (timeout_ms >> 2) + 1;
+	}
+}	
+
 // Timer interrupt increments counter_b until full second is elapsed.
 ISR(TIMER2_COMPA_vect)
 {
+	// System time
 	counter_b--;
 	if (counter_b == 0) {
 		system_tick();
 		counter_b = TOP_B;
+	}
+
+	// Timers
+	for (int i=0; i<(sizeof(oneshot)/sizeof(oneshot_t)); i++) {
+		oneshot_t *a = &oneshot[i];
+		if (a->timeout == 0) {
+			continue;
+		}
+		a->timeout--;
+		if (a->timeout == 0) {
+			a->callback();
+		}
 	}
 }
