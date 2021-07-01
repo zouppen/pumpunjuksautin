@@ -207,22 +207,6 @@ uint8_t adc_channel_selection(void) {
 		// NTC thermistor measurement
 		return 0;
 	}
-}	
-
-// FIXME remove me
-void call_handler(uint8_t chan, uint16_t val);
-
-// Interrupt service routine for the ADC completion
-ISR(ADC_vect) {
-	// Store the ADC port of previous measurement before changing it
-	uint8_t port = ADMUX & 0b00001111;
-
-	// Start the next measurement ASAP to keep ADC digitizing.
-	adc_start_sourcing(adc_channel_selection());
-
-	// Obtain previous result.
-	uint16_t val = ADCW;
-	call_handler(port, val);
 }
 
 // Update cumulative analog value for access outside the ISR. Do not let it overflow.

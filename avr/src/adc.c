@@ -6,6 +6,9 @@
 
 static adc_handler_t adc_handlers[9];
 
+// Prototypes
+static void call_handler(uint8_t chan, uint16_t val);
+
 void adc_init(void)
 {
 	// clear ADLAR in ADMUX (0x7C) to right-adjust the result
@@ -57,7 +60,7 @@ void adc_start_sourcing(uint8_t chan)
 	}
 }
 
-void call_handler(uint8_t chan, uint16_t val)
+static void call_handler(uint8_t chan, uint16_t val)
 {
 	if (chan >= sizeof(adc_handlers)/sizeof(adc_handler_t)) {
 		// Out of bounds
@@ -68,4 +71,17 @@ void call_handler(uint8_t chan, uint16_t val)
 		return;
 	}
 	adc_handlers[chan](val);
+}
+
+// Interrupt service routine for the ADC completion
+ISR(ADC_vect) {
+	// Store the ADC port of previous measurement before changing it
+	uint8_t port = ADMUX & 0b00001111;
+
+	// Start the next measurement ASAP to keep ADC digitizing.
+	adc_start_sourcing(adc_channel_selection());
+
+	// Obtain previous result.
+	uint16_t val = ADCW;
+	call_handler(port, val);
 }
