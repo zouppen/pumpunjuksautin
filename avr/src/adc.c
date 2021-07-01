@@ -83,5 +83,8 @@ ISR(ADC_vect) {
 
 	// Obtain previous result.
 	uint16_t val = ADCW;
+
+	// Enable interrupts while processing the data
+	sei();
 	call_handler(port, val);
 }
