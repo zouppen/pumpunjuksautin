@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <util/atomic.h>
 
 void adc_init(void)
 {
@@ -26,4 +27,22 @@ void adc_init(void)
 	// Set ADIE in ADCSRA (0x7A) to enable the ADC interrupt.
 	// Without this, the internal interrupt will not trigger.
 	ADCSRA |= 0b00001000;
+}
+
+// Set ADC source. Do not set above 15 because then you will overrun
+// other parts of ADMUX. A full list of possible inputs is available
+// in Table 24-4 of the ATMega328 datasheet.
+void adc_start_sourcing(uint8_t chan)
+{
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		// Clear MUX3..0 in ADMUX (0x7C) in preparation for setting the analog
+		// input
+		ADMUX &= 0b11110000;
+
+		// Set MUX3..0 in ADMUX (0x7C) to select ADC input
+		ADMUX |= chan;
+
+		// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
+		ADCSRA |= 0b01000000;
+	}
 }

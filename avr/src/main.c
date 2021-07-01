@@ -39,23 +39,6 @@ void loop(void);
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
 
-// Set ADC source. Do not set above 15 because then you will overrun
-// other parts of ADMUX. A full list of possible inputs is available
-// in Table 24-4 of the ATMega328 datasheet.
-void start_adc_sourcing(uint8_t chan) {
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		// Clear MUX3..0 in ADMUX (0x7C) in preparation for setting the analog
-		// input
-		ADMUX &= 0b11110000;
-
-		// Set MUX3..0 in ADMUX (0x7C) to select ADC input
-		ADMUX |= chan;
-
-		// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
-		ADCSRA |= 0b01000000;
-	}
-}
-
 // Set juksautin target voltage.
 void set_voltage(float u) {
 	uint16_t new_target = u / 1.1 * 1024;
@@ -81,7 +64,7 @@ int main() {
 	set_voltage(0.5);
 
 	// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
-	start_adc_sourcing(8);
+	adc_start_sourcing(8);
 
 	// Enable global interrupts.
 	sei();
@@ -192,11 +175,11 @@ ISR(ADC_vect) {
 	switch (cycle) {
 	case 0:
 		// Internal temperature measurement
-		start_adc_sourcing(8);
+		adc_start_sourcing(8);
 		break;
 	default:
 		// NTC thermistor measurement
-		start_adc_sourcing(0);
+		adc_start_sourcing(0);
 		break;
 	}
 
@@ -235,4 +218,3 @@ void store(volatile accu_t *a, uint16_t val) {
 	a->sum += val;
 	a->count++;
 }
-
