@@ -10,3 +10,7 @@ void adc_set_handler(uint8_t channel, adc_handler_t func);
 
 // Start digitizing given channel.
 void adc_start_sourcing(uint8_t chan);
+
+// You need to implement this. Selects ADC channel based on your
+// criteria.
+uint8_t adc_channel_selection(void);

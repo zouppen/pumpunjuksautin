@@ -187,6 +187,28 @@ void handle_int_temp(uint16_t val)
 	store(&v_accu.int_temp, val);
 }
 
+
+uint8_t adc_channel_selection(void) {
+	// Since this is called every ADC measurement, it's a good
+	// place to record the ratio of pulldowns and total
+	// measurements. That allows us to calculate the real
+	// thermistor value while juksautus is happening. We calculate
+	// juksautus count by counting the periods of time the current
+	// is flowing.
+	store(&v_accu.juksautin, juksautus);
+
+	// Now the actual selection. We use cycle length of 8
+	uint8_t cycle = v_accu.juksautin.count & 0b111;
+	switch (cycle) {
+	case 0:
+		// Internal temperature measurement
+		return 8;
+	default:
+		// NTC thermistor measurement
+		return 0;
+	}
+}	
+
 // FIXME remove me
 void call_handler(uint8_t chan, uint16_t val);
 
@@ -195,28 +217,12 @@ ISR(ADC_vect) {
 	// Store the ADC port of previous measurement before changing it
 	uint8_t port = ADMUX & 0b00001111;
 
-	// Start the next measurement ASAP to minimize drift caused by this ISR.
-	// Rotate between different analog inputs.
-	uint8_t cycle = v_accu.juksautin.count & 0b111; // Cycle length: 8
-	switch (cycle) {
-	case 0:
-		// Internal temperature measurement
-		adc_start_sourcing(8);
-		break;
-	default:
-		// NTC thermistor measurement
-		adc_start_sourcing(0);
-		break;
-	}
+	// Start the next measurement ASAP to keep ADC digitizing.
+	adc_start_sourcing(adc_channel_selection());
 
 	// Obtain previous result.
 	uint16_t val = ADCW;
 	call_handler(port, val);
-
-	// What we really are interested is the ratio of pulldowns and total measurements.
-	// That allows us to calculate the real thermistor value while juksautus is happening.
-	// We calculate juksautus count by counting the periods of time the current is flowing.
-	store(&v_accu.juksautin, juksautus);
 }
 
 // Update cumulative analog value for access outside the ISR. Do not let it overflow.
