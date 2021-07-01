@@ -1,5 +1,10 @@
+#include <stdlib.h>
 #include <avr/io.h>
 #include <util/atomic.h>
+
+#include "adc.h"
+
+static adc_handler_t adc_handlers[9];
 
 void adc_init(void)
 {
@@ -29,6 +34,11 @@ void adc_init(void)
 	ADCSRA |= 0b00001000;
 }
 
+void adc_set_handler(uint8_t channel, adc_handler_t func)
+{
+	adc_handlers[channel] = func;
+}
+
 // Set ADC source. Do not set above 15 because then you will overrun
 // other parts of ADMUX. A full list of possible inputs is available
 // in Table 24-4 of the ATMega328 datasheet.
@@ -45,4 +55,17 @@ void adc_start_sourcing(uint8_t chan)
 		// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
 		ADCSRA |= 0b01000000;
 	}
+}
+
+void call_handler(uint8_t chan, uint16_t val)
+{
+	if (chan >= sizeof(adc_handlers)/sizeof(adc_handler_t)) {
+		// Out of bounds
+		return;
+	}
+	if (adc_handlers[chan] == NULL) {
+		// No handler registered
+		return;
+	}
+	adc_handlers[chan](val);
 }

@@ -33,11 +33,14 @@ typedef struct {
 // Prototypes
 void store(volatile accu_t *a, uint16_t val);
 void loop(void);
+void handle_juksautus(uint16_t val);
+void handle_int_temp(uint16_t val);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 
 volatile accus_t v_accu; // Holds all volatile measurement data
 volatile uint16_t target; // Target voltage for juksautus
+static bool juksautus = false; // Is juksautus on at the moment?
 
 // Set juksautin target voltage.
 void set_voltage(float u) {
@@ -60,6 +63,8 @@ int main() {
 	serial_init();
 	clock_init();
 	adc_init();
+	adc_set_handler(0, handle_juksautus);
+	adc_set_handler(8, handle_int_temp);
 
 	set_voltage(0.5);
 
@@ -163,9 +168,30 @@ void loop(void) {
 	}
 }
 
+void handle_juksautus(uint16_t val)
+{
+	// Pump logic. Pull capacitor down to target voltage.
+	juksautus = val > target;
+	if (juksautus) {
+		OUTPUT(PIN_FB);
+	} else {
+		INPUT(PIN_FB);
+	}
+
+	// Store measurement
+	store(&v_accu.k9_raw, val);
+}
+
+void handle_int_temp(uint16_t val)
+{
+	store(&v_accu.int_temp, val);
+}
+
+// FIXME remove me
+void call_handler(uint8_t chan, uint16_t val);
+
 // Interrupt service routine for the ADC completion
 ISR(ADC_vect) {
-	static bool juksautus = false;
 	// Store the ADC port of previous measurement before changing it
 	uint8_t port = ADMUX & 0b00001111;
 
@@ -185,25 +211,7 @@ ISR(ADC_vect) {
 
 	// Obtain previous result.
 	uint16_t val = ADCW;
-
-	switch (port) {
-	case 0:
-		// Pump logic. Pull capacitor down to target voltage.
-		juksautus = val > target;
-		if (juksautus) {
-			OUTPUT(PIN_FB);
-		} else {
-			INPUT(PIN_FB);
-		}
-
-		// Store measurement
-		store(&v_accu.k9_raw, val);
-
-		break;
-	case 8:
-		store(&v_accu.int_temp, val);
-		break;
-	}
+	call_handler(port, val);
 
 	// What we really are interested is the ratio of pulldowns and total measurements.
 	// That allows us to calculate the real thermistor value while juksautus is happening.
