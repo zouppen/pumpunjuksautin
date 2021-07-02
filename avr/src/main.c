@@ -66,7 +66,7 @@ int main() {
 	adc_set_handler(0, handle_juksautus);
 	adc_set_handler(8, handle_int_temp);
 
-	set_voltage(0.5);
+	set_voltage(1);
 
 	// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
 	adc_start_sourcing(8);
@@ -90,6 +90,7 @@ void loop(void) {
 	static uint16_t i = ~0;
 	time_t now;
 	int zone_h, zone_m;
+	uint16_t target_voltage;
 
 	// Continue only if transmitter is idle and we have a new
 	// frame to parse.
@@ -137,6 +138,11 @@ void loop(void) {
 		// Get time
 		time(&now);
 		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&now));
+		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
+		serial_tx_start();
+	} else if (sscanf(rx_buf, "VOLTAGE %" SCNu16	, &target_voltage) == 1) {
+		set_voltage((float)target_voltage / 1000);
+		snprintf(serial_tx, SERIAL_TX_LEN, "Set voltage to %" PRIu16, target_voltage / 1000);
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
 	} else if (sscanf(rx_buf, "TIME %lu%3d%d", &now, &zone_h, &zone_m) == 3) {
