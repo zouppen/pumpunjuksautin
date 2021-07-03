@@ -1,6 +1,6 @@
 // RS-485 interface
 
-#define SERIAL_TX_LEN 40
+#define SERIAL_TX_LEN 80
 
 // Serial buffer which is sent on invocation of serial_tx_start().
 extern char serial_tx[SERIAL_TX_LEN];
