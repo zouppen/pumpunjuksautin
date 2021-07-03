@@ -148,6 +148,10 @@ void loop(void) {
 			serial_tx[SERIAL_TX_LEN-1] = '\0';
 		}
 		serial_tx_start();
+	} else if (strcmp(rx_buf, "ERR") == 0) {
+		bool err = READ(PIN_ERR);
+		strcpy(serial_tx, err ? "true" : "false");
+		serial_tx_start();
 	} else if (strcmp(rx_buf, "TIME") == 0) {
 		// Get time
 		time(&now);
