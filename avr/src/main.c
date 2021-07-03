@@ -191,7 +191,7 @@ void loop(void) {
 static float compute_real_temp(float mv, float ratio)
 {
 	// See control.md
-	return 1 / (((1000 / mv - 1) / 2000) - (ratio / 200));
+	return 1 / (((1.0 / mv - 1) / 2000) - (ratio / 200));
 }
 
 static void handle_juksautus(uint16_t val)
