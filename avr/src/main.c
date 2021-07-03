@@ -29,6 +29,7 @@ typedef struct {
 	accu_t int_temp;  // AVR internal temperature
 	accu_t outside_temp;  // Outside thermistor temp
 	accu_t juksautin; // Juksautin ratio
+	accu_t err;       // Error led ratio
 } accus_t;
 
 // Prototypes
@@ -37,6 +38,7 @@ static void loop(void);
 static void handle_juksautus(uint16_t val);
 static void handle_int_temp(uint16_t val);
 static void handle_outside_temp(uint16_t val);
+static void handle_err(uint16_t val);
 static float compute_real_temp(float mv, float ratio, float um, float rm);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
@@ -69,6 +71,7 @@ int main() {
 	adc_set_handler(0, handle_juksautus);
 	adc_set_handler(8, handle_int_temp);
 	adc_set_handler(3, handle_outside_temp);
+	adc_set_handler(2, handle_err);
 
 	set_voltage(1);
 
@@ -131,26 +134,24 @@ void loop(void) {
 		float int_temp = (accu_mean(&accu.int_temp)-324.31)/1.22;
 		float outside_temp = (accu_mean(&accu.outside_temp)) * VOLT;
 		float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
+		float err_ratio = accu_mean(&accu.err);
 
 		int wrote = snprintf(serial_tx,
-								SERIAL_TX_LEN, "%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16, 
-								i, 
-								(int)int_temp, 
-								(int)(outside_temp * 1000), 
-								(int)compute_real_temp(outside_temp, 0, 0.822, 4434),
-								(int)(k9_raw*1000), 
-								(int)compute_real_temp(k9_raw, ratio, 0.944, 1516),
-								(int)(ratio*100), 
-								accu.juksautin.count);
+				     SERIAL_TX_LEN, "%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16 "\nError: %f", 
+				     i, 
+				     (int)int_temp, 
+				     (int)(outside_temp * 1000), 
+				     (int)compute_real_temp(outside_temp, 0, 0.822, 4434),
+				     (int)(k9_raw*1000), 
+				     (int)compute_real_temp(k9_raw, ratio, 0.944, 1516),
+				     (int)(ratio*100), 
+				     accu.juksautin.count,
+				     err_ratio);
 	
 		if (wrote >= SERIAL_TX_LEN) {
 			// Ensuring endline in the end
 			serial_tx[SERIAL_TX_LEN-1] = '\0';
 		}
-		serial_tx_start();
-	} else if (strcmp(rx_buf, "ERR") == 0) {
-		bool err = READ(PIN_ERR);
-		strcpy(serial_tx, err ? "true" : "false");
 		serial_tx_start();
 	} else if (strcmp(rx_buf, "TIME") == 0) {
 		// Get time
@@ -222,6 +223,11 @@ static void handle_outside_temp(uint16_t val)
 	store(&v_accu.outside_temp, val);
 }
 
+static void handle_err(uint16_t val)
+{
+	store(&v_accu.err, val);
+}
+
 uint8_t adc_channel_selection(void) {
 	// Since this is called every ADC measurement, it's a good
 	// place to record the ratio of pulldowns and total
@@ -231,15 +237,18 @@ uint8_t adc_channel_selection(void) {
 	// is flowing.
 	store(&v_accu.juksautin, juksautus);
 
-	// Now the actual selection. We use cycle length of 8
-	uint8_t cycle = v_accu.juksautin.count & 0b111;
+	// Now the actual selection. We use cycle length of 16
+	uint8_t cycle = v_accu.juksautin.count & 0b1111;
 	switch (cycle) {
 	case 0:
 		// Internal temperature measurement
 		return 8;
 	case 4:
-	   // Outside temperature measurement
-	   return 3;
+		// Error LED sampling
+		return 2;
+	case 8:
+		// Outside temperature measurement
+		return 3;
 	default:
 		// NTC thermistor measurement
 		return 0;
