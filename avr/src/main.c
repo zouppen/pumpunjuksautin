@@ -133,13 +133,13 @@ void loop(void) {
 		float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
 
 		int wrote = snprintf(serial_tx,
-								SERIAL_TX_LEN, "%" PRIu16 ": %d°C internal %dmV outside %dmV %dmOhm %d%% %dmOhm %" PRIu16, 
+								SERIAL_TX_LEN, "%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16, 
 								i, 
 								(int)int_temp, 
-								(int)outside_temp, 
-								(int)(compute_real_temp(outside_temp, 0) * 1000),
+								(int)(outside_temp * 1000), 
+								(int)compute_real_temp(outside_temp, 0),
 								(int)(k9_raw*1000), 
-								(int)(compute_real_temp(k9_raw, ratio) * 1000),
+								(int)compute_real_temp(k9_raw, ratio),
 								(int)(ratio*100), 
 								accu.juksautin.count);
 	
