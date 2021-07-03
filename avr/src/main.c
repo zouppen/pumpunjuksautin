@@ -37,7 +37,7 @@ static void loop(void);
 static void handle_juksautus(uint16_t val);
 static void handle_int_temp(uint16_t val);
 static void handle_outside_temp(uint16_t val);
-static float compute_real_temp(float mv, float ratio);
+static float compute_real_temp(float mv, float ratio, float um, float rm);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 
@@ -137,9 +137,9 @@ void loop(void) {
 								i, 
 								(int)int_temp, 
 								(int)(outside_temp * 1000), 
-								(int)compute_real_temp(outside_temp, 0),
+								(int)compute_real_temp(outside_temp, 0, 0.822, 4434),
 								(int)(k9_raw*1000), 
-								(int)compute_real_temp(k9_raw, ratio),
+								(int)compute_real_temp(k9_raw, ratio, 0.944, 1516),
 								(int)(ratio*100), 
 								accu.juksautin.count);
 	
@@ -188,10 +188,10 @@ void loop(void) {
 	}
 }
 
-static float compute_real_temp(float mv, float ratio)
+static float compute_real_temp(float mv, float ratio, float um, float rm)
 {
 	// See control.md
-	return 1 / (((1.0 / mv - 1) / 2000) - (ratio / 200));
+	return 1 / (((um / mv - 1) / rm) - (ratio / 200));
 }
 
 static void handle_juksautus(uint16_t val)
