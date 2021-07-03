@@ -37,6 +37,7 @@ static void loop(void);
 static void handle_juksautus(uint16_t val);
 static void handle_int_temp(uint16_t val);
 static void handle_outside_temp(uint16_t val);
+static float compute_real_temp(float mv, float ratio);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 
@@ -131,7 +132,16 @@ void loop(void) {
 		float outside_temp = (accu_mean(&accu.outside_temp)) * VOLT;
 		float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
 
-		int wrote = snprintf(serial_tx, SERIAL_TX_LEN, "%" PRIu16 ": %d°C internal %dmV outside %dmV %d%% %" PRIu16, i, (int)int_temp, (int)outside_temp, (int)(k9_raw*1000), (int)(ratio*100), accu.juksautin.count);
+		int wrote = snprintf(serial_tx,
+								SERIAL_TX_LEN, "%" PRIu16 ": %d°C internal %dmV outside %dmV %dmOhm %d%% %dmOhm %" PRIu16, 
+								i, 
+								(int)int_temp, 
+								(int)outside_temp, 
+								(int)(compute_real_temp(outside_temp, 0) * 1000),
+								(int)(k9_raw*1000), 
+								(int)(compute_real_temp(k9_raw, ratio) * 1000),
+								(int)(ratio*100), 
+								accu.juksautin.count);
 	
 		if (wrote >= SERIAL_TX_LEN) {
 			// Ensuring endline in the end
@@ -176,6 +186,12 @@ void loop(void) {
 
 		serial_tx_start();
 	}
+}
+
+static float compute_real_temp(float mv, float ratio)
+{
+	// See control.md
+	return 1 / (((1000 / mv - 1) / 2000) - (ratio / 200));
 }
 
 static void handle_juksautus(uint16_t val)
