@@ -1,31 +1,15 @@
 #include <util/atomic.h>
 #include "clock.h"
 
-/*
-   Use dividers and counters to get 1 second from the clock
-   frequency. You need to get F_CPU = prescaler * TOP_A * TOP_B.
-
-   In our case prescaler is 256 and TOP_A is 250, we generate
-   Counter2 compare match A interrupt every 250x256 cycles which 4 ms
-   when F_CPU is 16MHz. It is then counted to full seconds by an
-   additional 250 counter TOP_B.
-
-   Counter2 compare match B interrupt is available for accuracy
-   timing, having granularity of prescaler / F_CPU = 16µs
-*/
-
-#define TOP_A 250 // Counter TOP value in OCR2A
-#define TOP_B 250 // Software divider
-
-static volatile uint8_t counter_b = TOP_B;
+static volatile uint8_t counter_b = CLOCK_B;
 static bool is_set = false;
 
 void clock_init(void)
 {
 	// CTC with OCRA as TOP.
 	TCCR2A |= _BV(WGM21);
-	// We get an interrupt every prescaler * TOP_A cycles.
-	OCR2A = TOP_A-1;
+	// We get an interrupt every prescaler * CLOCK_A cycles.
+	OCR2A = CLOCK_A-1;
 	// Enable Timer Compare match A interrupt.
 	TIMSK2 |= _BV(OCIE2A);
 	// Prescaler F_CPU / 256.
@@ -56,7 +40,7 @@ void clock_arm_timer(uint8_t delay)
 	// using 16 bit integer for the math and then do integer
 	// modulo operation.
 	uint16_t target = (uint16_t)TCNT2 + delay;
-	if (target >= TOP_A) target -= TOP_A;
+	if (target >= CLOCK_A) target -= CLOCK_A;
 
 	// Set timer B match to given target.
 	OCR2B = target;
@@ -74,6 +58,6 @@ ISR(TIMER2_COMPA_vect)
 	counter_b--;
 	if (counter_b == 0) {
 		system_tick();
-		counter_b = TOP_B;
+		counter_b = CLOCK_B;
 	}
 }
