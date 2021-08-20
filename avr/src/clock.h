@@ -20,11 +20,6 @@
 #include <time.h>
 #include <stdbool.h>
 
-// Sanity check to make sure the clock ticks once per second.
-#if CLOCK_A * CLOCK_B * CLOCK_PRESCALER != F_CPU
-#error CLOCK_A * CLOCK_B * CLOCK_PRESCALER must equal to F_CPU
-#endif
-
 // Initialize clock using TIMER2
 void clock_init(void);
 

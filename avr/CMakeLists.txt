@@ -34,6 +34,12 @@ set(BAUD 9600 CACHE STRING "Serial port baud rate")
 
 message(STATUS "${MCU} running at ${F_CPU} Hz")
 
+# Sanity check to make sure the clock ticks once per second.
+math(EXPR clock_sanitycheck "${CLOCK_A} * ${CLOCK_B} * ${CLOCK_PRESCALER} - ${F_CPU}" OUTPUT_FORMAT DECIMAL)
+if(clock_sanitycheck)
+  message(SEND_ERROR "CLOCK_A * CLOCK_B * CLOCK_PRESCALER must equal to ${F_CPU}")
+endif()
+
 # The programmer to use, read avrdude manual for list
 set(PROG_TYPE usbasp CACHE STRING "Programmer type in avrdude")
 
