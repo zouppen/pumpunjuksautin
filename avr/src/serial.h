@@ -11,8 +11,15 @@ void serial_init(void);
 // Is serial transmitter on?
 bool serial_is_transmitting(void);
 
-// Gets a message from serial receive buffer, if any.
-char const *serial_pull_message(void);
+// Gets a message from serial receive buffer, if any.  The returned
+// buffer is immutable. Buffer must be released after processing with
+// serial_free_message()
+char const *serial_get_message(void);
+
+// Release receive buffer. This is important to do as soon as
+// possible. If frame is not freed before back buffer is filled,
+// error_flip_timeout occurs.
+void serial_free_message(void);
 
 // Start half-duplex transmission (disables rx).
 void serial_tx_start(void);

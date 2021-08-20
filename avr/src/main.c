@@ -102,21 +102,25 @@ void loop(void) {
 	// Continue only if transmitter is idle and we have a new
 	// frame to parse.
 	if (serial_is_transmitting()) return;
-	char const *const rx_buf = serial_pull_message();
+	char const *const rx_buf = serial_get_message();
 	if (rx_buf == NULL) return;
 
 	i++;
 
-	// Parse command
+	// Parse command. NB! Call serial_free_message() ASAP after
+	// rx_buf is no longer peeked to avoid timeouts.
 	if (strcmp(rx_buf, "PING") == 0) {
+		serial_free_message();
 		// Prepare ping answer
 		strcpy(serial_tx, "PONG");
 		serial_tx_start();
 	} else if (strcmp(rx_buf, "LED") == 0) {
+		serial_free_message();
 		// Useful for testing if rx works because we see
 		// visual indication even if tx is bad.
 		TOGGLE(PIN_LED);
 	} else if (strcmp(rx_buf, "READ") == 0) {
+		serial_free_message();
 		// Duplicate the data
 		accus_t accu;
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
@@ -154,17 +158,20 @@ void loop(void) {
 		}
 		serial_tx_start();
 	} else if (strcmp(rx_buf, "TIME") == 0) {
+		serial_free_message();
 		// Get time
 		time(&now);
 		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&now));
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
 	} else if (sscanf(rx_buf, "VOLTAGE %" SCNu16, &target_voltage) == 1) {
+		serial_free_message();
 		set_voltage((float)target_voltage / 1000);
 		snprintf(serial_tx, SERIAL_TX_LEN, "Set voltage to %" PRIu16, target_voltage / 1000);
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
 	} else if (sscanf(rx_buf, "TIME %lu%3d%d", &now, &zone_h, &zone_m) == 3) {
+		serial_free_message();
 		// Set time
 		clock_set(now, ((int32_t)zone_h*60+zone_m)*60);
 	} else {
@@ -189,6 +196,7 @@ void loop(void) {
 			}
 		}
 
+		serial_free_message();
 		serial_tx_start();
 	}
 }

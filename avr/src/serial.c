@@ -22,12 +22,15 @@ char serial_tx[SERIAL_TX_LEN]; // Outgoing serial data
 static char serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
 static char serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
 static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
+static char *serial_rx_front = NULL; // Contains front buffer if it's not yet freed
 
 static int serial_rx_i = 0; // Receive buffer position
 static int serial_tx_i = 0; // Send buffer position
-static volatile bool may_flip = false; // Back buffer has a frame
 static volatile bool rx_idle = true; // Is the remote end having a pause
 static volatile bool tx_state = false; // Is tx start requested
+
+// Error counters
+static volatile int error_flip_timeout = 0; // Number of missed flips
 
 // Static prototypes
 static void transmit_now(void);
@@ -94,24 +97,19 @@ void transmit_now()
 	}
 }
 
-// Pulls message if any. The returned buffer is immutable.
-char const *serial_pull_message(void)
+char const *serial_get_message(void)
 {
 	char *ret;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		if (may_flip) {
-			may_flip = false;
-			// Do back buffer flip and return the old back buffer.
-			ret = serial_rx_back;
-			serial_rx_back = (serial_rx_a == serial_rx_back)
-				? serial_rx_b
-				: serial_rx_a;
-		} else {
-			// Do not flip.
-			ret = NULL;
-		}
+		ret = serial_rx_front;
 	}
 	return ret;
+}
+
+void serial_free_message(void) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		serial_rx_front = NULL;
+	}
 }
 
 // Transmit finished. This interrupt is called after all data has been
@@ -159,7 +157,7 @@ ISR(USART_RX_vect)
 	char in = UDR0;
 	bool fail = serial_rx_i == SERIAL_RX_LEN;
 	bool end = in == '\n';
-	may_flip = false;
+
 	if (fail) {
 		// Too long frame is completely ignored. When we have
 		// newline, then rollback the buffer and prepare for a
@@ -168,12 +166,25 @@ ISR(USART_RX_vect)
 			serial_rx_i = 0;
 		}
 	} else if (end) {
-		// Ensure the frame is null-terminated
-		serial_rx_back[serial_rx_i] = '\0';
-		serial_rx_i = 0;
-
 		// Ready to serve the frame.
-		may_flip = true;
+		if (serial_rx_front != NULL) {
+			// Increment error counter. We need to
+			// throw a frame overboard because main loop
+			// didn't process front buffer in time.
+			error_flip_timeout++;
+		} else {
+			// Ensure the frame is null-terminated and
+			// rollback the rx buffer index.
+			serial_rx_back[serial_rx_i] = '\0';
+			serial_rx_i = 0;
+
+			// Flip!
+			serial_rx_front = serial_rx_back;
+			serial_rx_back =
+				(serial_rx_a == serial_rx_back)
+				? serial_rx_b
+				: serial_rx_a;
+		}
 	} else {
 		serial_rx_back[serial_rx_i] = in;
 		serial_rx_i++;
