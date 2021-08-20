@@ -29,8 +29,8 @@ static int serial_tx_i = 0; // Send buffer position
 static volatile bool rx_idle = true; // Is the remote end having a pause
 static volatile bool tx_state = false; // Is tx start requested
 
-// Error counters
-static volatile int error_flip_timeout = 0; // Number of missed flips
+// (Error) counters
+static volatile serial_counter_t counts = {0, 0, 0};
 
 // Static prototypes
 static void transmit_now(void);
@@ -112,6 +112,17 @@ void serial_free_message(void) {
 	}
 }
 
+serial_counter_t pull_serial_counters(void) {
+	serial_counter_t ret;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ret = counts;
+		counts.good = 0;
+		counts.flip_timeout = 0;
+		counts.too_long = 0;
+	}
+	return ret;
+}
+
 // Transmit finished. This interrupt is called after all data has been
 // sent (UDRE_vect no longer feeds data). In this interrupt the RS-485
 // is switched back to receive mode.
@@ -163,16 +174,19 @@ ISR(USART_RX_vect)
 		// newline, then rollback the buffer and prepare for a
 		// new frame.
 		if (end) {
+			counts.too_long++;
 			serial_rx_i = 0;
 		}
 	} else if (end) {
 		// Ready to serve the frame.
 		if (serial_rx_front != NULL) {
-			// Increment error counter. We need to
-			// throw a frame overboard because main loop
-			// didn't process front buffer in time.
-			error_flip_timeout++;
+			counts.flip_timeout++;
+			// We need to throw a frame overboard because
+			// main loop didn't process front buffer in
+			// time.
 		} else {
+			counts.good++;
+
 			// Ensure the frame is null-terminated and
 			// rollback the rx buffer index.
 			serial_rx_back[serial_rx_i] = '\0';

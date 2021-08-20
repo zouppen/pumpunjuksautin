@@ -2,6 +2,12 @@
 
 #define SERIAL_TX_LEN 80
 
+typedef struct {
+	int good;         // Number of good frames
+	int flip_timeout; // Number of missed flips
+	int too_long;     // Number of too long frames
+} serial_counter_t;
+
 // Serial buffer which is sent on invocation of serial_tx_start().
 extern char serial_tx[SERIAL_TX_LEN];
 
@@ -24,3 +30,5 @@ void serial_free_message(void);
 // Start half-duplex transmission (disables rx).
 void serial_tx_start(void);
 
+// Get serial counters and zero them
+serial_counter_t pull_serial_counters(void);
