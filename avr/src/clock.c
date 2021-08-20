@@ -12,8 +12,27 @@ void clock_init(void)
 	OCR2A = CLOCK_A-1;
 	// Enable Timer Compare match A interrupt.
 	TIMSK2 |= _BV(OCIE2A);
-	// Prescaler F_CPU / 256.
-	TCCR2B |= _BV(CS22) | _BV(CS21);
+
+	// Setting prescaler. For readability we are not using macros
+	// but costant values. To understand this, see ATmega328p data
+	// sheet table 17-9. Clock Select Bit Description.
+#if CLOCK_PRESCALER == 1
+	TCCR2B |= 1;
+#elif CLOCK_PRESCALER == 8
+	TCCR2B |= 2;
+#elif CLOCK_PRESCALER == 32
+	TCCR2B |= 3;
+#elif CLOCK_PRESCALER == 64
+	TCCR2B |= 4;
+#elif CLOCK_PRESCALER == 128
+	TCCR2B |= 5;
+#elif CLOCK_PRESCALER == 256
+	TCCR2B |= 6;
+#elif CLOCK_PRESCALER == 1024
+	TCCR2B |= 7;
+#else
+#error Prescaler must be one of: 1, 8, 32, 64, 128, 256, 1024.
+#endif
 }
 
 void clock_set(time_t now, int32_t zone)
