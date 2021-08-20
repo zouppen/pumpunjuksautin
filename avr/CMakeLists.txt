@@ -40,6 +40,16 @@ if(clock_sanitycheck)
   message(SEND_ERROR "CLOCK_A * CLOCK_B * CLOCK_PRESCALER must equal to ${F_CPU}")
 endif()
 
+# MODBUS_SILENCE is the 14 bit long duration on the serial line,
+# measured in TIMER2 ticks. We consider a frame to be ready after 14
+# bits and after another 14 bits we can start transmitting.
+# https://en.wikipedia.org/wiki/Modbus#Modbus_RTU_frame_format_(primarily_used_on_asynchronous_serial_data_lines_like_RS-485/EIA-485)
+math(EXPR MODBUS_SILENCE "14 * ${F_CPU} / ${BAUD} / ${CLOCK_PRESCALER}" OUTPUT_FORMAT DECIMAL)
+message(STATUS "Modbus silence duration: ${MODBUS_SILENCE} ticks of TIMER2")
+if(MODBUS_SILENCE GREATER_EQUAL CLOCK_A)
+  message(SEND_ERROR "Modbus silence too long. Must be smaller than ${CLOCK_A}. Adjust baud rate or clock parameters.")
+endif()
+
 # The programmer to use, read avrdude manual for list
 set(PROG_TYPE usbasp CACHE STRING "Programmer type in avrdude")
 
@@ -63,8 +73,9 @@ add_definitions(
     -DCLOCK_B=${CLOCK_B}
     -DCLOCK_PRESCALER=${CLOCK_PRESCALER}
     -DBAUD=${BAUD}
+    -DMODBUS_SILENCE=${MODBUS_SILENCE}
 )
-# mmcu MUST be passed to bot the compiler and linker, this handle the linker
+# mmcu MUST be passed to both the compiler and linker, this handles the linker
 set(CMAKE_EXE_LINKER_FLAGS -mmcu=${MCU})
 
 add_compile_options(
