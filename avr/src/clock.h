@@ -1,15 +1,15 @@
 /*
    Use dividers and counters to get 1 second from the clock
    frequency. You need to get F_CPU = CLOCK_PRESCALER * CLOCK_A *
-   CLOCK_B.
+   CLOCK_B. The variables are configurable in CMake.
 
    We use ATmega328P TIMER2 which is an 8-bit timer. So both CLOCK_A
    and CLOCK_B must be integers between 1 and 255. Prescaler can have
    value of 1, 8, 32, 64, 128, 256 or 1024 only.
 
-   In our case prescaler is 256 and CLOCK_A is 250, we generate
-   Counter2 compare match A interrupt every 250x256 cycles which 4 ms
-   when F_CPU is 16MHz. It is then counted to full seconds by an
+   For example, when prescaler is 256 and CLOCK_A is 250, we generate
+   Counter2 compare match A interrupt every 250x256 cycles which is 4
+   ms when F_CPU is 16MHz. It is then counted to full seconds by an
    additional 250 counter CLOCK_B.
 
    Counter2 compare match A is used for the real-time clock, so
@@ -19,10 +19,6 @@
 
 #include <time.h>
 #include <stdbool.h>
-
-#define CLOCK_A 250 // Counter TOP value in OCR2A
-#define CLOCK_B 250 // Software divider
-#define CLOCK_PRESCALER 256 // Prescaler
 
 // Sanity check to make sure the clock ticks once per second.
 #if CLOCK_A * CLOCK_B * CLOCK_PRESCALER != F_CPU
