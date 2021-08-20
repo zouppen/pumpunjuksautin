@@ -16,6 +16,12 @@
 
 #define SERIAL_RX_LEN 30
 
+typedef enum {
+	rx_active, // Receiving data
+	rx_end, // Between rx packets
+	rx_tx_ready // We could even tx
+} rx_state_t;
+
 char serial_tx[SERIAL_TX_LEN]; // Outgoing serial data
 
 // Double buffering for rx
@@ -23,10 +29,11 @@ static char serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
 static char serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
 static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
 static char *serial_rx_front = NULL; // Contains front buffer if it's not yet freed
+static int serial_rx_front_len; // Contains front buffer data length
 
 static int serial_rx_i = 0; // Receive buffer position
 static int serial_tx_i = 0; // Send buffer position
-static volatile bool rx_idle = true; // Is the remote end having a pause
+static volatile rx_state_t rx_state = rx_tx_ready;
 static volatile bool tx_state = false; // Is tx start requested
 
 // (Error) counters
@@ -34,6 +41,7 @@ static volatile serial_counter_t counts = {0, 0, 0};
 
 // Static prototypes
 static void transmit_now(void);
+static void end_of_frame(void);
 
 void serial_init(void)
 {
@@ -63,27 +71,66 @@ bool serial_is_transmitting(void) {
 	return tx_state;
 }
 
-// Many RS-485 transceivers are not doing tx/rx handover quickly
-// enough. Make sure the receiver has been idle before starting.
+// RS-485 is half duplex. We need to wait until the line is tx ready.
 void serial_tx_start(void) {
-	// Serial has to be idle before sending, so start only RX has
-	// been silent.
+	// tx_state doesn't mean it's started but requested.
 	tx_state = true;
-	if (rx_idle) transmit_now();
+
+	// Start tx only if the remote end is ready to receive.
+	if (rx_state == rx_tx_ready) transmit_now();
 }
 
-// Callback when it's safe to start transmitting
+// Callback when clock_arm_timer triggered
 ISR(TIMER2_COMPB_vect) {
 	// Timer is oneshot, cancel timer
 	TIMSK2 &= ~_BV(OCIE2B);
 
-	// RX is idle but start transmit only if it has been
-	// requested.
-	rx_idle = true;
-	if (tx_state) transmit_now();
+	if (rx_state == rx_active) {
+		// Phase 1: End of frame. Restart timer for phase 2.
+		rx_state = rx_end;
+		clock_arm_timer(MODBUS_SILENCE);
+		end_of_frame();
+	} else {
+		// Phase 2: Ready to transmit
+		rx_state = rx_tx_ready;
+		if (tx_state) transmit_now();
+	}
 }
 
-void transmit_now()
+// Called from timer interrupt handler when we're between frames.
+static void end_of_frame(void)
+{
+	bool overflow = serial_rx_i == SERIAL_RX_LEN;
+	bool locked = serial_rx_front != NULL;
+	if (overflow) {
+		// Too long frame is completely
+		// ignored. Rollback the buffer and prepare
+		// for a new frame.
+		counts.too_long++;
+	} else if (locked) {
+		// We need to throw a frame overboard
+		// because main loop didn't process
+		// front buffer in time.
+		counts.flip_timeout++;
+	} else {
+		// Looks good, at least before CRC checks and so.
+		counts.good++;
+
+		// Collect length for later use
+		serial_rx_front_len = serial_rx_i;
+
+		// Flip buffers!
+		serial_rx_front = serial_rx_back;
+		serial_rx_back =
+			(serial_rx_a == serial_rx_back)
+			? serial_rx_b
+			: serial_rx_a;
+	}
+	// Latest but not least: Rewind receive buffer
+	serial_rx_i = 0;
+}
+
+static void transmit_now()
 {
 	// Indicator only.
 	TOGGLE(PIN_LED);
@@ -102,6 +149,8 @@ char const *serial_get_message(void)
 	char *ret;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		ret = serial_rx_front;
+		// Temporary until we go all binary
+		ret[serial_rx_front_len] = '\0';
 	}
 	return ret;
 }
@@ -160,47 +209,16 @@ ISR(USART_UDRE_vect)
 // Called when data available from serial.
 ISR(USART_RX_vect)
 {
-	// Make the timeout longer if remote end doesn't do rx/tx
-	// switch quickly enough.
-	clock_arm_timer(20);
-	rx_idle = false;
+	// Arm the timer when we receive a character. When
+	// MODBUS_SILENCE amount of ticks is passed, consider a
+	// complete frame.
+	clock_arm_timer(MODBUS_SILENCE);
+	rx_state = rx_active;
 
 	char in = UDR0;
-	bool fail = serial_rx_i == SERIAL_RX_LEN;
-	bool end = in == '\n';
+	bool overflow = serial_rx_i == SERIAL_RX_LEN;
 
-	if (fail) {
-		// Too long frame is completely ignored. When we have
-		// newline, then rollback the buffer and prepare for a
-		// new frame.
-		if (end) {
-			counts.too_long++;
-			serial_rx_i = 0;
-		}
-	} else if (end) {
-		// Ready to serve the frame.
-		if (serial_rx_front != NULL) {
-			counts.flip_timeout++;
-			// We need to throw a frame overboard because
-			// main loop didn't process front buffer in
-			// time.
-		} else {
-			counts.good++;
-
-			// Ensure the frame is null-terminated and
-			// rollback the rx buffer index.
-			serial_rx_back[serial_rx_i] = '\0';
-			serial_rx_i = 0;
-
-			// Flip!
-			serial_rx_front = serial_rx_back;
-			serial_rx_back =
-				(serial_rx_a == serial_rx_back)
-				? serial_rx_b
-				: serial_rx_a;
-		}
-	} else {
-		serial_rx_back[serial_rx_i] = in;
-		serial_rx_i++;
-	}
+	if (overflow) return;
+	serial_rx_back[serial_rx_i] = in;
+	serial_rx_i++;
 }
