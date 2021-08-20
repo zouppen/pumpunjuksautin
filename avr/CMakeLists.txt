@@ -19,7 +19,7 @@ endif()
 ## AVR Chip Configuration
 # 8Mhz, this should match the crystal on your board,
 # I use 8Mhz and 3.3V for the lowest power consumption
-set(F_CPU 16000000UL CACHE STRING "CPU frequency")
+set(F_CPU 16000000)
 # CPU, you can find the list here:
 # https://gcc.gnu.org/onlinedocs/gcc/AVR-Options.html
 set(MCU atmega328p)
@@ -31,6 +31,9 @@ set(CLOCK_PRESCALER 256 CACHE STRING "Clock prescaler for TIMER2")
 
 # Default Baudrate for UART, read avr include/util/setbaud.h for usage
 set(BAUD 9600 CACHE STRING "Serial port baud rate")
+
+message(STATUS "${MCU} running at ${F_CPU} Hz")
+
 # The programmer to use, read avrdude manual for list
 set(PROG_TYPE usbasp CACHE STRING "Programmer type in avrdude")
 
@@ -49,7 +52,7 @@ set(CMAKE_ASM_COMPILER avr-gcc)
 
 # Pass defines to compiler
 add_definitions(
-    -DF_CPU=${F_CPU}
+    -DF_CPU=${F_CPU}UL
     -DCLOCK_A=${CLOCK_A}
     -DCLOCK_B=${CLOCK_B}
     -DCLOCK_PRESCALER=${CLOCK_PRESCALER}
