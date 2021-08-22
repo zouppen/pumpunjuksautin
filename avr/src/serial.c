@@ -25,14 +25,15 @@ typedef enum {
 char serial_tx[SERIAL_TX_LEN]; // Outgoing serial data
 
 // Double buffering for rx
-static char serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
-static char serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
-static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
-static char *serial_rx_front = NULL; // Contains front buffer if it's not yet freed
-static int serial_rx_front_len; // Contains front buffer data length
+static uint8_t serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
+static uint8_t serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
+static uint8_t *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
+static uint8_t *serial_rx_front = NULL; // Contains front buffer if it's not yet freed
+static uint8_t serial_rx_front_len; // Contains front buffer data length
 
-static int serial_rx_i = 0; // Receive buffer position
-static int serial_tx_i = 0; // Send buffer position
+static uint8_t serial_rx_i = 0; // Receive buffer position.
+				// In case of an overflow it will be ~0.
+static uint8_t serial_tx_i = 0; // Send buffer position
 static volatile rx_state_t rx_state = rx_tx_ready;
 static volatile bool tx_state = false; // Is tx start requested
 
@@ -100,7 +101,7 @@ ISR(TIMER2_COMPB_vect) {
 // Called from timer interrupt handler when we're between frames.
 static void end_of_frame(void)
 {
-	bool overflow = serial_rx_i == SERIAL_RX_LEN;
+	bool const overflow = serial_rx_i > SERIAL_RX_LEN;
 	bool locked = serial_rx_front != NULL;
 	if (overflow) {
 		// Too long frame is completely
@@ -144,15 +145,21 @@ static void transmit_now()
 	}
 }
 
-char const *serial_get_message(void)
+uint8_t serial_get_message(uint8_t **const buf)
 {
-	char *ret;
+	int len;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		ret = serial_rx_front;
-		// Temporary until we go all binary
-		ret[serial_rx_front_len] = '\0';
+		if (serial_rx_front == NULL) {
+			*buf = NULL;
+			return 0;
+		}
+
+		serial_rx_front[serial_rx_front_len] = '\0';
+
+		*buf = serial_rx_front;
+		len = serial_rx_front_len;
 	}
-	return ret;
+	return len;
 }
 
 void serial_free_message(void) {
@@ -193,7 +200,7 @@ ISR(USART_TX_vect)
 // Called when there is opportunity to fill TX FIFO.
 ISR(USART_UDRE_vect)
 {
-	char out = serial_tx[serial_tx_i];
+	uint8_t out = serial_tx[serial_tx_i];
 
 	if (out == '\0') {
 		// Now it's the time to send last character.
@@ -216,9 +223,18 @@ ISR(USART_RX_vect)
 	rx_state = rx_active;
 
 	uint8_t in = UDR0;
-	bool overflow = serial_rx_i == SERIAL_RX_LEN;
 
-	if (overflow) return;
+	// Using >= in comparison instead of > because we got a
+	// character after the buffer is already full (no place to put
+	// that character any more).
+	bool const overflow = serial_rx_i >= SERIAL_RX_LEN;
+	if (overflow) {
+		// We got a character after the buffer is
+		// full. Marking the index as invalid.
+		serial_rx_i = ~0;
+		return;
+	}
+
 	serial_rx_back[serial_rx_i] = in;
 	serial_rx_i++;
 }

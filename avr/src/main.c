@@ -102,10 +102,31 @@ void loop(void) {
 	// Continue only if transmitter is idle and we have a new
 	// frame to parse.
 	if (serial_is_transmitting()) return;
-	char const *const rx_buf = serial_get_message();
+
+	// Using char* because of strcmp & friends. serial_get_message()
+	// is giving uint8_t* but it's less error prone to suppress
+	// warnings than to do an unconditional typecast.
+	char *rx_buf;
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+	int len = serial_get_message(&rx_buf);
+#pragma GCC diagnostic pop
 	if (rx_buf == NULL) return;
 
 	i++;
+
+	// Process only messages with a newline
+	if (rx_buf[len-1] != '\n') {
+		serial_free_message();
+		strcpy(serial_tx, "Message not terminated by newline");
+		serial_tx_start();
+		return;
+	}
+
+	// Clean trailing CR and LF
+	rx_buf[len-1] = '\0';
+	if (len >= 2 && rx_buf[len-2] == '\r') {
+		rx_buf[len-2] = '\0';
+	}
 
 	// Parse command. NB! Call serial_free_message() ASAP after
 	// rx_buf is no longer peeked to avoid timeouts.

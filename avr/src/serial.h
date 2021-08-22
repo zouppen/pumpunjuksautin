@@ -20,7 +20,7 @@ bool serial_is_transmitting(void);
 // Gets a message from serial receive buffer, if any.  The returned
 // buffer is immutable. Buffer must be released after processing with
 // serial_free_message()
-char const *serial_get_message(void);
+uint8_t serial_get_message(uint8_t **const buf);
 
 // Release receive buffer. This is important to do as soon as
 // possible. If frame is not freed before back buffer is filled,
