@@ -215,7 +215,7 @@ ISR(USART_RX_vect)
 	clock_arm_timer(MODBUS_SILENCE);
 	rx_state = rx_active;
 
-	char in = UDR0;
+	uint8_t in = UDR0;
 	bool overflow = serial_rx_i == SERIAL_RX_LEN;
 
 	if (overflow) return;
