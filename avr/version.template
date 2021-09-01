@@ -1,0 +1,8 @@
+// -*- mode: c; c-file-style: "linux" -*-
+//
+// Product version is injected to this file by version.cmake and this
+// object gets linked with the rest of the source files in src/.
+
+#include <avr/pgmspace.h>
+
+char const version[] PROGMEM = "${PRODUCT_VERSION}";

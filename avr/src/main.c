@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <util/atomic.h>
 #include <avr/sleep.h>
+#include <avr/pgmspace.h>
 
 #include "pin.h"
 #include "serial.h"
@@ -31,9 +32,8 @@
 #include "adc.h"
 #include "hardware_config.h"
 
-// A hack from https://stackoverflow.com/a/2411008/514723
-#define STRINGIZE(x) #x
-#define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
+// Version definition is delivered by version.cmake
+extern char const version[] PROGMEM;
 
 // Store analog measurement sum and measurement count. Used for mean
 // calculation.
@@ -216,8 +216,7 @@ void loop(void) {
 		clock_set(now, ((int32_t)zone_h*60+zone_m)*60);
 	} else if (strcmp(rx_buf, "VERSION") == 0) {
 		serial_free_message();
-		// Version definition is delivered by CMakeLists.txt
-		strcpy(serial_tx, STRINGIZE_VALUE_OF(PRODUCT_VERSION));
+		strcpy_P(serial_tx, version);
 		serial_tx_start();
 	} else {
 		// Do not answer to unrelated messages. This is

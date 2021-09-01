@@ -3,29 +3,6 @@ cmake_minimum_required(VERSION 3.16)
 # Project name
 project("Pumpunjuksautin")
 
-# Git integration
-find_package(Git)
-if(Git_FOUND)
-  EXECUTE_PROCESS(
-    COMMAND ${GIT_EXECUTABLE} describe --tags --dirty
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_DESCRIBE_VERSION
-    RESULT_VARIABLE GIT_DESCRIBE_RESULT
-    ERROR_VARIABLE GIT_DESCRIBE_ERROR
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-  if (GIT_DESCRIBE_RESULT)
-    set(PRODUCT_VERSION "unknown-not-git-tree")
-    message(STATUS "Not a git repo, not embedding version information")
-  else ()
-    set(PRODUCT_VERSION ${GIT_DESCRIBE_VERSION})
-    message(STATUS "Version: ${PRODUCT_VERSION}")
-  endif()
-else(Git_FOUND)
-  set(PRODUCT_VERSION "unknown-no-git-support")
-  message(STATUS "Git not found. Install git to embed version information to the binary")
-endif()
-
 # Product filename
 set(PRODUCT_NAME juksautin)
 
@@ -97,7 +74,6 @@ add_definitions(
     -DCLOCK_PRESCALER=${CLOCK_PRESCALER}
     -DBAUD=${BAUD}
     -DMODBUS_SILENCE=${MODBUS_SILENCE}
-    -DPRODUCT_VERSION=${PRODUCT_VERSION}
 )
 
 # mmcu MUST be passed to both the compiler and linker, this handles the linker
@@ -113,7 +89,7 @@ add_compile_options(
 file(GLOB SRC_FILES "src/*.c") # Load all files in src folder
 
 # Create one target
-add_executable(${PRODUCT_NAME} ${SRC_FILES})
+add_executable(${PRODUCT_NAME} ${SRC_FILES} ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 
 # Rename the output to .elf as we will create multiple files
 set_target_properties(${PRODUCT_NAME} PROPERTIES OUTPUT_NAME ${PRODUCT_NAME}.elf)
@@ -139,3 +115,13 @@ add_custom_target(fuses avrdude -c ${PROG_TYPE} -p ${MCU} -B 3 -U lfuse:w:${L_FU
 
 # Clean extra files
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PRODUCT_NAME}.hex;${PRODUCT_NAME}.eeprom;${PRODUCT_NAME}.lst")
+
+# Git version string generation. From an example at
+# https://www.mattkeeter.com/blog/2018-01-06-versioning/
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
+           ${CMAKE_CURRENT_BINARY_DIR}/_version.c
+	   COMMAND ${CMAKE_COMMAND}
+	   -D REAL_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+	   -P ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake
+)
