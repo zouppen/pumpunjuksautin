@@ -166,7 +166,7 @@ void loop(void) {
 		float err_ratio = accu_mean(&accu.err);
 
 		int wrote = snprintf(serial_tx,
-				     SERIAL_TX_LEN, "%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16 "\nError: %f", 
+				     SERIAL_TX_LEN, "%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16 "\nError: %u", 
 				     i, 
 				     (int)int_temp, 
 				     (int)(outside_temp * 1000), 
@@ -175,7 +175,7 @@ void loop(void) {
 				     (int)compute_real_temp(k9_raw, ratio, 0.944, 1516),
 				     (int)(ratio*100), 
 				     accu.juksautin.count,
-				     err_ratio);
+				     (unsigned int)(err_ratio*1000));
 	
 		if (wrote >= SERIAL_TX_LEN) {
 			// Ensuring endline in the end
