@@ -1,0 +1,24 @@
+#!/bin/sh -eu
+#
+# Tool for setting internal clock on Pumpunjuksautin device. Useful
+# for testing device sanity, too.
+
+if test $# -ne 1 -a $# -ne 2 || test ! -c "$1"; then
+    exec 1>&2
+    echo Sets clock on Pumpunjuksautin. Default baud rate is 9600.
+    echo Usage: $0 JUKSAUTIN_DEV [BAUD]
+    exit 1
+fi
+
+exec 3>&1
+{
+    echo -n "Old time: " >&3
+    echo TIME
+    sleep 0.2
+    echo -n "TIME "
+    date +%s%z
+    sleep 0.2
+    echo -n "New time: " >&3
+    echo TIME
+    sleep 0.2
+} | socat - "$1,rawer,b${2-9600}"
