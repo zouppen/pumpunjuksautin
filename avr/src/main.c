@@ -136,7 +136,7 @@ void loop(void) {
 	// Process only messages with a newline
 	if (rx_buf[len-1] != '\n') {
 		serial_free_message();
-		strcpy(serial_tx, "Message not terminated by newline");
+		strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
 		serial_tx_start();
 		return;
 	}
@@ -149,17 +149,17 @@ void loop(void) {
 
 	// Parse command. NB! Call serial_free_message() ASAP after
 	// rx_buf is no longer peeked to avoid timeouts.
-	if (strcmp(rx_buf, "PING") == 0) {
+	if (strcmp_P(rx_buf, PSTR("PING")) == 0) {
 		serial_free_message();
 		// Prepare ping answer
-		strcpy(serial_tx, "PONG");
+		strcpy_P(serial_tx, PSTR("PONG"));
 		serial_tx_start();
-	} else if (strcmp(rx_buf, "LED") == 0) {
+	} else if (strcmp_P(rx_buf, PSTR("LED")) == 0) {
 		serial_free_message();
 		// Useful for testing if rx works because we see
 		// visual indication even if tx is bad.
 		TOGGLE(PIN_LED);
-	} else if (strcmp(rx_buf, "READ") == 0) {
+	} else if (strcmp_P(rx_buf, PSTR("READ")) == 0) {
 		serial_free_message();
 		// Duplicate the data
 		accus_t accu;
@@ -180,8 +180,8 @@ void loop(void) {
 		float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
 		float err_ratio = accu_mean(&accu.err);
 
-		int wrote = snprintf(serial_tx,
-				     SERIAL_TX_LEN, "%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16 "\nError: %f", 
+		int wrote = snprintf_P(serial_tx,
+				     SERIAL_TX_LEN, PSTR("%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16 "\nError: %f"),
 				     i, 
 				     (int)int_temp, 
 				     (int)(outside_temp * 1000), 
@@ -197,24 +197,24 @@ void loop(void) {
 			serial_tx[SERIAL_TX_LEN-1] = '\0';
 		}
 		serial_tx_start();
-	} else if (strcmp(rx_buf, "TIME") == 0) {
+	} else if (strcmp_P(rx_buf, PSTR("TIME")) == 0) {
 		serial_free_message();
 		// Get time
 		time(&now);
 		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&now));
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
-	} else if (sscanf(rx_buf, "VOLTAGE %" SCNu16, &target_voltage) == 1) {
+	} else if (sscanf_P(rx_buf, PSTR("VOLTAGE %" SCNu16), &target_voltage) == 1) {
 		serial_free_message();
 		set_voltage((float)target_voltage / 1000);
 		snprintf(serial_tx, SERIAL_TX_LEN, "Set voltage to %" PRIu16, target_voltage / 1000);
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
-	} else if (sscanf(rx_buf, "TIME %lu%3d%d", &now, &zone_h, &zone_m) == 3) {
+	} else if (sscanf_P(rx_buf, PSTR("TIME %lu%3d%d"), &now, &zone_h, &zone_m) == 3) {
 		serial_free_message();
 		// Set time
 		clock_set(now, ((int32_t)zone_h*60+zone_m)*60);
-	} else if (strcmp(rx_buf, "VERSION") == 0) {
+	} else if (strcmp_P(rx_buf, PSTR("VERSION")) == 0) {
 		serial_free_message();
 		strcpy_P(serial_tx, version);
 		serial_tx_start();
@@ -225,7 +225,7 @@ void loop(void) {
 
 		// Dump everything. This is temporary to ease debugging.
 		char *out = serial_tx;
-		strcpy(serial_tx, "Invalid data: ");
+		strcpy_P(serial_tx, PSTR("Invalid data: "));
 		out += 14;
 
 		for (int i=0; rx_buf[i] != '\0'; i++) {
