@@ -116,7 +116,7 @@ void loop(void) {
 	static uint16_t i = ~0;
 	time_t now;
 	int zone_h, zone_m;
-	uint16_t target_voltage;
+	uint16_t target_millivoltage;
 
 	// Continue only if transmitter is idle and we have a new
 	// frame to parse.
@@ -204,10 +204,11 @@ void loop(void) {
 		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&now));
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
-	} else if (sscanf_P(rx_buf, PSTR("VOLTAGE %" SCNu16), &target_voltage) == 1) {
+	} else if (sscanf_P(rx_buf, PSTR("VOLTAGE %" SCNu16), &target_millivoltage) == 1) {
 		serial_free_message();
-		set_voltage((float)target_voltage / 1000);
-		snprintf(serial_tx, SERIAL_TX_LEN, "Set voltage to %" PRIu16, target_voltage / 1000);
+		float target_voltage = (float)target_millivoltage / 1000;
+		set_voltage(target_voltage);
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Set voltage to %f V"), target_voltage);
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
 	} else if (sscanf_P(rx_buf, PSTR("TIME %lu%3d%d"), &now, &zone_h, &zone_m) == 3) {
