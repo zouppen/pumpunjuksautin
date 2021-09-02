@@ -21,4 +21,4 @@ exec 3>&1
     echo -n "New time: " >&3
     echo TIME
     sleep 0.2
-} | socat - "$1,rawer,b${2-9600}"
+} | socat - "$1,cfmakeraw,b${2-9600}"
