@@ -76,8 +76,10 @@ add_definitions(
     -DMODBUS_SILENCE=${MODBUS_SILENCE}
 )
 
-# mmcu MUST be passed to both the compiler and linker, this handles the linker
-set(CMAKE_EXE_LINKER_FLAGS -mmcu=${MCU})
+# mmcu MUST be passed to both the compiler and linker, this handles
+# the linker Add also floating point support to printf
+# https://www.nongnu.org/avr-libc/user-manual/group__avr__stdio.html#gaa3b98c0d17b35642c0f3e4649092b9f1
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,-u,vfprintf -lprintf_flt -lm -mmcu=${MCU}")
 
 add_compile_options(
     -mmcu=${MCU} # MCU
