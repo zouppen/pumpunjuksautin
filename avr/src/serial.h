@@ -6,7 +6,8 @@
 typedef struct {
 	int good;         // Number of good frames
 	int flip_timeout; // Number of missed flips
-	int too_long;     // Number of too long frames
+	int too_long_rx;  // Number of too long frames in receive
+	int too_long_tx;  // Number of too long frames in transmit
 } serial_counter_t;
 
 // Serial buffer which is sent on invocation of serial_tx_start().
@@ -28,8 +29,12 @@ uint8_t serial_get_message(uint8_t **const buf);
 // error_flip_timeout occurs.
 void serial_free_message(void);
 
-// Start half-duplex transmission (disables rx).
-void serial_tx_start(void);
+// Start half-duplex transmission (disables rx). For sending NUL
+// terminated strings. Outputs newline after every send.
+void serial_tx_line(void);
+
+// Start half-duplex transmission (disables rx). Binary safe.
+void serial_tx_bin(uint8_t const len);
 
 // Get serial counters and zero them
 serial_counter_t pull_serial_counters(void);

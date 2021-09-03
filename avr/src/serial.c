@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include <util/atomic.h>
 #include <util/setbaud.h>
 
@@ -44,6 +45,7 @@ static uint8_t serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
 static uint8_t *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
 static uint8_t *serial_rx_front = NULL; // Contains front buffer if it's not yet freed
 static uint8_t serial_rx_front_len; // Contains front buffer data length
+static uint8_t serial_tx_len; // Total number of bytes to send
 
 static uint8_t serial_rx_i = 0; // Receive buffer position.
 				// In case of an overflow it will be ~0.
@@ -86,12 +88,54 @@ bool serial_is_transmitting(void) {
 	return tx_state;
 }
 
-// RS-485 is half duplex. We need to wait until the line is tx ready.
-void serial_tx_start(void) {
-	// tx_state doesn't mean it's started but requested.
-	tx_state = true;
+void serial_tx_line(void) {
+	// Search for terminating NUL.
+	uint8_t len = strnlen(serial_tx, SERIAL_TX_LEN);
+	if (len == SERIAL_TX_LEN) {
+		// This is fine for us, but still storing the incident.
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+			counts.too_long_tx++;
+		}
 
-	// Start tx only if the remote end is ready to receive.
+		// Put an ellipsis to mark cut message
+		serial_tx[SERIAL_TX_LEN-3] = '.';
+		serial_tx[SERIAL_TX_LEN-2] = '.';
+		
+		// Leave space for the upcoming newline char
+		len--;
+	}
+	
+	// Place newline at the end (overriding NUL) and send it.
+	serial_tx[len] = '\n';
+	len++;
+
+	serial_tx_bin(len);
+}
+
+void serial_tx_bin(uint8_t const len) {
+	// The buffer is allowed to be completely full, that's why
+	// comparing greater than instead of greater-than-equals.
+	if (len > SERIAL_TX_LEN) {
+		// Ignore the whole frame if it's too long.
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+			counts.too_long_tx++;
+		}
+		return;
+	}
+
+	if (len == 0) {
+		// Must not go to transmit phase at all.
+		return;
+	}
+
+	// Use supplied length
+	serial_tx_len = len;
+
+	// RS-485 is half duplex. We need to wait until rx line
+	// becomes idle.  We start by going to ready-to-send condition
+	// and then check send if the receiver is idle. If it's not,
+	// interrupt TIMER2_COMPB_vect will call transmit_now() later.
+	tx_state = true;
 	if (rx_state == rx_tx_ready) transmit_now();
 }
 
@@ -121,7 +165,7 @@ static void end_of_frame(void)
 		// Too long frame is completely
 		// ignored. Rollback the buffer and prepare
 		// for a new frame.
-		counts.too_long++;
+		counts.too_long_rx++;
 	} else if (locked) {
 		// We need to throw a frame overboard
 		// because main loop didn't process
@@ -188,7 +232,8 @@ serial_counter_t pull_serial_counters(void) {
 		ret = counts;
 		counts.good = 0;
 		counts.flip_timeout = 0;
-		counts.too_long = 0;
+		counts.too_long_rx = 0;
+		counts.too_long_tx = 0;
 	}
 	return ret;
 }
@@ -214,17 +259,17 @@ ISR(USART_TX_vect)
 // Called when there is opportunity to fill TX FIFO.
 ISR(USART_UDRE_vect)
 {
-	uint8_t out = serial_tx[serial_tx_i];
+	uint8_t const out = serial_tx[serial_tx_i];
 
-	if (out == '\0') {
-		// Now it's the time to send last character.
-		UCSR0B &= ~_BV(UDRIE0); // Disable this interrupt
-		UDR0 = '\n'; // Send newline instead of NUL
-	} else {
-		// Otherwise transmit
-		UDR0 = out;
-		serial_tx_i++;
+	if (serial_tx_len == serial_tx_i + 1) {
+		// We are going to transmit the last
+		// character. Disable this interrupt.
+		UCSR0B &= ~_BV(UDRIE0);
 	}
+
+	// Transmit
+	UDR0 = out;
+	serial_tx_i++;
 }
 
 // Called when data available from serial.
