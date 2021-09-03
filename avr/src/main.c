@@ -180,36 +180,29 @@ void loop(void) {
 		float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
 		float err_ratio = accu_mean(&accu.err);
 
-		int wrote = snprintf_P(serial_tx,
-				     SERIAL_TX_LEN, PSTR("%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16 "\nError: %f"),
-				     i, 
-				     (int)int_temp, 
-				     (int)(outside_temp * 1000), 
-				     (int)compute_real_temp(outside_temp, 0, 0.822, 4434),
-				     (int)(k9_raw*1000), 
-				     (int)compute_real_temp(k9_raw, ratio, 0.944, 1516),
-				     (int)(ratio*100), 
-				     accu.juksautin.count,
-				     err_ratio);
-	
-		if (wrote >= SERIAL_TX_LEN) {
-			// Ensuring endline in the end
-			serial_tx[SERIAL_TX_LEN-1] = '\0';
-		}
+		snprintf_P(serial_tx,
+			   SERIAL_TX_LEN, PSTR("%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16 "\nError: %f"),
+			   i,
+			   (int)int_temp,
+			   (int)(outside_temp * 1000),
+			   (int)compute_real_temp(outside_temp, 0, 0.822, 4434),
+			   (int)(k9_raw*1000),
+			   (int)compute_real_temp(k9_raw, ratio, 0.944, 1516),
+			   (int)(ratio*100),
+			   accu.juksautin.count,
+			   err_ratio);
 		serial_tx_line();
 	} else if (strcmp_P(rx_buf, PSTR("TIME")) == 0) {
 		serial_free_message();
 		// Get time
 		time(&ts_now);
 		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&ts_now));
-		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_line();
 	} else if (sscanf_P(rx_buf, PSTR("VOLTAGE %" SCNu16), &target_millivoltage) == 1) {
 		serial_free_message();
 		float target_voltage = (float)target_millivoltage / 1000;
 		set_voltage(target_voltage);
 		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Set voltage to %f V"), target_voltage);
-		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_line();
 	} else if (sscanf_P(rx_buf, PSTR("TIME %lu %" SCNd32 " %lu %" SCNd32), &ts_now, &zone_now, &ts_turn, &zone_turn) == 4) {
 		serial_free_message();
@@ -233,10 +226,7 @@ void loop(void) {
 			out += snprintf(out, serial_tx + SERIAL_TX_LEN - out, "%02hhx ", rx_buf[i]);
 
 			if (serial_tx + SERIAL_TX_LEN - out <= 0) {
-				// Ensure it's null terminated and stop!
-				serial_tx[SERIAL_TX_LEN-3] = '.';
-				serial_tx[SERIAL_TX_LEN-2] = '.';
-				serial_tx[SERIAL_TX_LEN-1] = '\0';
+				// We have run out of buffer space. Stop!
 				break;
 			}
 		}
