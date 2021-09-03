@@ -69,8 +69,8 @@ void clock_set(time_t const ts_now, int32_t const zone_now, time_t const ts_turn
 	// only. Therefore we need to mangle the data a bit.
 
 	// Current zone is smaller of the two, because DST offset must
-	// be positive.
-	int32_t pseudo_zone = zone_now < zone_turn ? zone_now : zone_turn;
+	// be positive. When no DST, use zone_now.
+	int32_t const pseudo_zone = ts_turn == 0 || zone_now < zone_turn ? zone_now : zone_turn;
 
 	// Calculate difference of current and future zones. In case
 	// of no DST (ts_turn is 0) make sure the offset is zero, too.
