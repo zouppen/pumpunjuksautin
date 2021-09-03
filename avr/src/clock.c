@@ -18,8 +18,14 @@
 #include <util/atomic.h>
 #include "clock.h"
 
+static int unixy_dst(const time_t *time, int32_t *z);
+
 static volatile uint8_t counter_b = CLOCK_B;
 static bool is_set = false;
+
+// DST changes data (avr = AVR epoch, not UNIX)
+static time_t clock_turn_avr = 0;
+static int32_t clock_turn_offset = 0;
 
 void clock_init(void)
 {
@@ -50,17 +56,39 @@ void clock_init(void)
 #else
 #error Prescaler must be one of: 1, 8, 32, 64, 128, 256, 1024.
 #endif
+
+	// Use our own function for summer time math
+	set_dst(unixy_dst);
 }
 
-void clock_set(time_t now, int32_t zone)
+void clock_set(time_t const ts_now, int32_t const zone_now, time_t const ts_turn, int32_t const zone_turn)
 {
-	now -= UNIX_OFFSET;
+	// DST structure in UNIX and AVR-libc are different. Unix uses
+	// time zone offset directly but avr-libc thinks traditionally
+	// by using "base zone" and supports positive DST offsets
+	// only. Therefore we need to mangle the data a bit.
+
+	// Current zone is smaller of the two, because DST offset must
+	// be positive.
+	int32_t pseudo_zone = zone_now < zone_turn ? zone_now : zone_turn;
+
+	// Calculate difference of current and future zones. In case
+	// of no DST (ts_turn is 0) make sure the offset is zero, too.
+	int32_t const new_turn_offset = ts_turn == 0 ? 0 : zone_turn - zone_now;
+
+	// AVR uses Zigbee epoch. Converting from UNIX epoch
+	time_t const avr_now = ts_now - UNIX_OFFSET;
+	time_t const new_turn_avr = ts_turn - UNIX_OFFSET;
+
+	// Make sure we do the clock update stuff atomically
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		// Reset counters
 		TCNT2 = 0;
 		counter_b = 0;
-		set_system_time(now);
-		set_zone(zone);
+		set_system_time(avr_now);
+		set_zone(pseudo_zone);
+		clock_turn_avr = new_turn_avr;
+		clock_turn_offset = new_turn_offset;
 		is_set = true;
 	}
 }
@@ -96,4 +124,17 @@ ISR(TIMER2_COMPA_vect)
 		system_tick();
 		counter_b = CLOCK_B;
 	}
+}
+
+// This DST handler can only handle present and future DST changes
+// over one DST change. Meaning it doesn't work as expected for past
+// dates and if the time is more than couple of months in
+// advance. With usual control tasks it's not a problem.
+static int unixy_dst(const time_t *time, int32_t *z)
+{
+	bool const before_turn = *time < clock_turn_avr;
+	bool const towards_summer = clock_turn_offset > 0;
+	bool const is_now_dst = before_turn ^ towards_summer;
+
+	return is_now_dst ? labs(clock_turn_offset) : 0;
 }

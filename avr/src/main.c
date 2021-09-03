@@ -114,8 +114,8 @@ float accu_mean(accu_t *a) {
 // Processor loop
 void loop(void) {
 	static uint16_t i = ~0;
-	time_t now;
-	int zone_h, zone_m;
+	time_t ts_now, ts_turn;
+	int32_t zone_now, zone_turn;
 	uint16_t target_millivoltage;
 
 	// Continue only if transmitter is idle and we have a new
@@ -200,8 +200,8 @@ void loop(void) {
 	} else if (strcmp_P(rx_buf, PSTR("TIME")) == 0) {
 		serial_free_message();
 		// Get time
-		time(&now);
-		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&now));
+		time(&ts_now);
+		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&ts_now));
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
 	} else if (sscanf_P(rx_buf, PSTR("VOLTAGE %" SCNu16), &target_millivoltage) == 1) {
@@ -211,10 +211,10 @@ void loop(void) {
 		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Set voltage to %f V"), target_voltage);
 		serial_tx[SERIAL_TX_LEN-1] = '\0'; // Ensure null termination
 		serial_tx_start();
-	} else if (sscanf_P(rx_buf, PSTR("TIME %lu%3d%d"), &now, &zone_h, &zone_m) == 3) {
+	} else if (sscanf_P(rx_buf, PSTR("TIME %lu %" SCNd32 " %lu %" SCNd32), &ts_now, &zone_now, &ts_turn, &zone_turn) == 4) {
 		serial_free_message();
 		// Set time
-		clock_set(now, ((int32_t)zone_h*60+zone_m)*60);
+		clock_set(ts_now, zone_now, ts_turn, zone_turn);
 	} else if (strcmp_P(rx_buf, PSTR("VERSION")) == 0) {
 		serial_free_message();
 		strcpy_P(serial_tx, version);

@@ -24,8 +24,12 @@
 void clock_init(void);
 
 // Set clock to given time. NB! Resets also internal tick
-// counters. Time zone given in seconds, e.g. 3600 for UTC+1.
-void clock_set(time_t now, int32_t zone);
+// counters. Timestamps are using UNIX epoch. Zone in parameter
+// zone_now and zone_turn are given in seconds, e.g. 3600 for
+// UTC+1. The last two of the parameters define when the next DST
+// offset change occurs and what is the next offset. In case of no
+// known future DST change, ts_turn must be 0.
+void clock_set(time_t const ts_now, int32_t const zone_now, time_t const ts_turn, int32_t const zone_turn);
 
 // Test if clock is already set or is it running fake time
 bool clock_is_set(void);

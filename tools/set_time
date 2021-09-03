@@ -6,17 +6,61 @@
 if test $# -ne 1 -a $# -ne 2 || test ! -c "$1"; then
     exec 1>&2
     echo Sets clock on Pumpunjuksautin. Default baud rate is 9600.
-    echo Usage: $0 JUKSAUTIN_DEV [BAUD]
+    echo Usage:
+    echo "  Local time:    $0 JUKSAUTIN_DEV [BAUD]"
+    echo "  Another zone:  TZ=Europe/Helsinki $0 JUKSAUTIN_DEV [BAUD]"
     exit 1
 fi
 
+# Allow testing by supplying DATE var with e.g. '+2months'
+export DATE="${DATE-now}"
+
+# Allow supply of time zone via environment variable,
+export TZ="${TZ-localtime}"
+
+# Extract next time transition (daylight saving) timestamp and
+# offset. Does not produce any output if there is no DST.
+extract_dst () {
+    zdump -t `date +%s -d "$DATE"`,10000000000 -i "$TZ" | {
+	read foo
+	read foo
+	read foo foo zone_now foo
+	if read trans_day trans_time trans_zone foo; then
+	    date -d "$trans_day $trans_time$trans_zone" "+%s%n%::z"
+	fi
+    }
+}
+
+# Extract current timestamp and offset
+extract_now () {
+    date -d "$DATE" "+%s%n%::z"
+}
+
+# Convert time and zone to bc formula
+for_bc () {
+    if read joo; then
+	echo "$joo"
+	IFS=':' read h m s
+	echo "(0$h)*3600+($m)*60+($s)"
+    else
+	# No DST
+	echo "0\n0"
+    fi
+}
+
+# Get all information as bc formula
+get_all () {
+    extract_now | for_bc
+    extract_dst | for_bc
+}
+
+# Actual serial port communications
 exec 3>&1
 {
     echo -n "Old time: " >&3
     echo TIME
     sleep 0.2
-    echo -n "TIME "
-    date +%s%z
+    echo TIME `get_all | bc`
     sleep 0.2
     echo -n "New time: " >&3
     echo TIME
