@@ -30,8 +30,6 @@
 #include "pin.h"
 #include "hardware_config.h"
 
-#define SERIAL_RX_LEN 30
-
 typedef enum {
 	rx_active, // Receiving data
 	rx_end, // Between rx packets

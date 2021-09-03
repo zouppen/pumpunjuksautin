@@ -1,5 +1,6 @@
 // RS-485 interface
 
+#define SERIAL_RX_LEN 50
 #define SERIAL_TX_LEN 80
 
 typedef struct {
