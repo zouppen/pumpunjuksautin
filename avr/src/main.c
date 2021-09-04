@@ -219,13 +219,13 @@ void loop(void) {
 
 		// Dump everything. This is temporary to ease debugging.
 		char *out = serial_tx;
-		strcpy_P(serial_tx, PSTR("Invalid data: "));
-		out += 14;
+		strcpy_P(serial_tx, PSTR("Invalid data:"));
+		out += 13;
 
 		for (int i=0; rx_buf[i] != '\0'; i++) {
-			out += snprintf(out, serial_tx + SERIAL_TX_LEN - out, "%02hhx ", rx_buf[i]);
+			out += snprintf(out, serial_tx + SERIAL_TX_LEN - out, " %02hhx", rx_buf[i]);
 
-			if (serial_tx + SERIAL_TX_LEN - out <= 0) {
+			if (out >= serial_tx + SERIAL_TX_LEN) {
 				// We have run out of buffer space. Stop!
 				break;
 			}
