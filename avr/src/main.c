@@ -59,6 +59,7 @@ static void handle_int_temp(uint16_t val);
 static void handle_outside_temp(uint16_t val);
 static void handle_err(uint16_t val);
 static float compute_real_temp(float mv, float ratio, float um, float rm);
+static bool strip_line_ending(char *const buf, int const len);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 
@@ -111,6 +112,22 @@ float accu_mean(accu_t *a) {
 	return (float)a->sum / a->count;
 }
 
+// Replace line ending (LF or CRLF) from the incoming message with NUL
+// character.
+static bool strip_line_ending(char *const buf, int const len)
+{
+	// No LF is a showstopper
+	if (buf[len-1] != '\n') return false;
+
+	// Clean trailing CR and LF
+	buf[len-1] = '\0';
+	if (len >= 2 && buf[len-2] == '\r') {
+		buf[len-2] = '\0';
+	}
+
+	return true;
+}
+
 // Processor loop
 void loop(void) {
 	static uint16_t i = ~0;
@@ -129,27 +146,24 @@ void loop(void) {
 #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 	int len = serial_get_message(&rx_buf);
 #pragma GCC diagnostic pop
+
+	// Continue only if we have got a message.
 	if (rx_buf == NULL) return;
 
+	// Incoming message counter
 	i++;
-
-	// Process only messages with a newline
-	if (rx_buf[len-1] != '\n') {
-		serial_free_message();
-		strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
-		serial_tx_line();
-		return;
-	}
-
-	// Clean trailing CR and LF
-	rx_buf[len-1] = '\0';
-	if (len >= 2 && rx_buf[len-2] == '\r') {
-		rx_buf[len-2] = '\0';
-	}
 
 	// Parse command. NB! Call serial_free_message() ASAP after
 	// rx_buf is no longer peeked to avoid timeouts.
-	if (strcmp_P(rx_buf, PSTR("PING")) == 0) {
+	if (!strip_line_ending(rx_buf, len)) {
+		serial_free_message();
+		strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
+		serial_tx_line();		
+	} else if (*rx_buf == '\0') {
+		serial_free_message();
+		strcpy_P(serial_tx, PSTR("Empty message"));
+		serial_tx_line();
+	} else if (strcmp_P(rx_buf, PSTR("PING")) == 0) {
 		serial_free_message();
 		// Prepare ping answer
 		strcpy_P(serial_tx, PSTR("PONG"));
