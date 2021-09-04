@@ -153,21 +153,21 @@ void loop(void) {
 	// Incoming message counter
 	i++;
 
+	// Marker if any serial is written.
+	*serial_tx = '\0';
+
 	// Parse command. NB! Call serial_free_message() ASAP after
 	// rx_buf is no longer peeked to avoid timeouts.
 	if (!strip_line_ending(rx_buf, len)) {
 		serial_free_message();
 		strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
-		serial_tx_line();		
 	} else if (*rx_buf == '\0') {
 		serial_free_message();
 		strcpy_P(serial_tx, PSTR("Empty message"));
-		serial_tx_line();
 	} else if (strcmp_P(rx_buf, PSTR("PING")) == 0) {
 		serial_free_message();
 		// Prepare ping answer
 		strcpy_P(serial_tx, PSTR("PONG"));
-		serial_tx_line();
 	} else if (strcmp_P(rx_buf, PSTR("LED")) == 0) {
 		serial_free_message();
 		// Useful for testing if rx works because we see
@@ -205,19 +205,16 @@ void loop(void) {
 			   (int)(ratio*100),
 			   accu.juksautin.count,
 			   err_ratio);
-		serial_tx_line();
 	} else if (strcmp_P(rx_buf, PSTR("TIME")) == 0) {
 		serial_free_message();
 		// Get time
 		time(&ts_now);
 		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&ts_now));
-		serial_tx_line();
 	} else if (sscanf_P(rx_buf, PSTR("VOLTAGE %" SCNu16), &target_millivoltage) == 1) {
 		serial_free_message();
 		float target_voltage = (float)target_millivoltage / 1000;
 		set_voltage(target_voltage);
 		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Set voltage to %f V"), target_voltage);
-		serial_tx_line();
 	} else if (sscanf_P(rx_buf, PSTR("TIME %lu %" SCNd32 " %lu %" SCNd32), &ts_now, &zone_now, &ts_turn, &zone_turn) == 4) {
 		serial_free_message();
 		// Set time
@@ -225,7 +222,6 @@ void loop(void) {
 	} else if (strcmp_P(rx_buf, PSTR("VERSION")) == 0) {
 		serial_free_message();
 		strcpy_P(serial_tx, version);
-		serial_tx_line();
 	} else {
 		// Do not answer to unrelated messages. This is
 		// important to handle point-to-multipoint protocol:
@@ -246,7 +242,11 @@ void loop(void) {
 		}
 
 		serial_free_message();
-		serial_tx_line();
+	}
+
+	// Send line if there is any.
+	if (*serial_tx != '\0') {
+	    serial_tx_line();
 	}
 }
 
