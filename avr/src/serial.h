@@ -1,7 +1,7 @@
 // RS-485 interface
 
 #define SERIAL_RX_LEN 50
-#define SERIAL_TX_LEN 80
+#define SERIAL_TX_LEN 90
 
 typedef struct {
 	int good;         // Number of good frames
