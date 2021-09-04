@@ -11,9 +11,9 @@ No coils.
 
 
 | Address | False       | True      | Description                     |
-|---------|-------------|-----------|---------------------------------|
-| 0x0001  | LOW         | HIGH      | Error LED status                |
-| 0x0002  | Clock unset | Clock set | Internal real-time clock status |
+|--------:|-------------|-----------|---------------------------------|
+|  0x0001 | LOW         | HIGH      | Error LED status                |
+|  0x0002 | Clock unset | Clock set | Internal real-time clock status |
 
 ## Input registers
 
@@ -30,6 +30,6 @@ Every register is read-only.
 Registers are read-write.
 
 | Address | Registers | Data type | Unit | Description              |
-|---------|----------:|-----------|------|--------------------------|
-| 0x0001  |         1 | int16     | mV   | Juksautus target voltage |
+|--------:|----------:|-----------|------|--------------------------|
+|  0x0001 |         1 | int16     | mV   | Juksautus target voltage |
 
