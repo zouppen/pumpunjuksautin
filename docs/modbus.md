@@ -6,33 +6,33 @@
 
 Coils are read-write.
 
-| Address | False   | True   | Description                               |
-|--------:|---------|--------|-------------------------------------------|
-|  0x0001 | LED off | LED on | Indicator LED control (for testing comms) |
+|  Address | False   | True   | Description                               |
+|---------:|---------|--------|-------------------------------------------|
+| `0x0001` | LED off | LED on | Indicator LED control (for testing comms) |
 
 ## Discrete inputs
 
 Every input is read-only.
 
-| Address | False       | True      | Description                     |
-|--------:|-------------|-----------|---------------------------------|
-|  0x0001 | LOW         | HIGH      | Error LED status                |
-|  0x0002 | Clock unset | Clock set | Internal real-time clock status |
+|  Address | False       | True      | Description                     |
+|---------:|-------------|-----------|---------------------------------|
+| `0x0001` | LOW         | HIGH      | Error LED status                |
+| `0x0002` | Clock unset | Clock set | Internal real-time clock status |
 
 ## Input registers
 
 Every register is read-only.
 
-| Address | Registers | Data type | Unit   | Description                |
-|--------:|----------:|-----------|--------|----------------------------|
-|  0x0001 |         1 | int16     | 0.01°C | Tank temperature           |
-|  0x0002 |         1 | int16     | 0.01°C | Outside temperature        |
-|  0x0010 |        16 | char[]    | -      | Version string, NUL padded |
+|  Address | Registers | Data type | Unit   | Description                |
+|---------:|----------:|-----------|--------|----------------------------|
+| `0x0001` |         1 | int16     | 0.01°C | Tank temperature           |
+| `0x0002` |         1 | int16     | 0.01°C | Outside temperature        |
+| `0x0010` |        16 | char[]    | -      | Version string, NUL padded |
 
 ## Holding registers
 
 Registers are read-write.
 
-| Address | Registers | Data type | Unit | Description              |
-|--------:|----------:|-----------|------|--------------------------|
-|  0x0001 |         1 | int16     | mV   | Juksautus target voltage |
+|  Address | Registers | Data type | Unit | Description              |
+|---------:|----------:|-----------|------|--------------------------|
+| `0x0001` |         1 | int16     | mV   | Juksautus target voltage |
