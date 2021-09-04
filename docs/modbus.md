@@ -1,14 +1,18 @@
 # Modbus register table
 
-**THIS IS A DRAFT**
+**THIS IS A DRAFT!**
 
 ## Coils
 
-No coils.
+Coils are read-write.
+
+| Address | False   | True   | Description                               |
+|--------:|---------|--------|-------------------------------------------|
+|  0x0001 | LED off | LED on | Indicator LED control (for testing comms) |
 
 ## Discrete inputs
 
-
+Every input is read-only.
 
 | Address | False       | True      | Description                     |
 |--------:|-------------|-----------|---------------------------------|
@@ -32,4 +36,3 @@ Registers are read-write.
 | Address | Registers | Data type | Unit | Description              |
 |--------:|----------:|-----------|------|--------------------------|
 |  0x0001 |         1 | int16     | mV   | Juksautus target voltage |
-
