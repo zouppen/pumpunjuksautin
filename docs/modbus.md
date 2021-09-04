@@ -24,8 +24,8 @@ Every input is read-only.
 Registers are read-write.
 
 |  Address | Registers | Read | Write | Data type | Unit   | Description                |
-|---------:|----------:|------|-------|-----------|--------|----------------------------|
-| `0x0001` |         1 | ✓    | ✗     | int16     | 0.01°C | Tank temperature           |
-| `0x0002` |         1 | ✓    | ✗     | int16     | 0.01°C | Outside temperature        |
+|---------:|----------:|:----:|:-----:|-----------|--------|----------------------------|
+| `0x0001` |         1 | ✓    |       | int16     | 0.01°C | Tank temperature           |
+| `0x0002` |         1 | ✓    |       | int16     | 0.01°C | Outside temperature        |
 | `0x0001` |         1 | ✓    | ✓     | int16     | mV     | Juksautus target voltage   |
-| `0x0010` |        16 | ✓    | ✗     | char[]    |        | Version string, NUL padded |
+| `0x0010` |        16 | ✓    |       | char[]    |        | Version string, NUL padded |
