@@ -166,7 +166,6 @@ void loop(void) {
 		strcpy_P(serial_tx, PSTR("Empty message"));
 	} else if (strcmp_P(rx_buf, PSTR("PING")) == 0) {
 		serial_free_message();
-		// Prepare ping answer
 		strcpy_P(serial_tx, PSTR("PONG"));
 	} else if (strcmp_P(rx_buf, PSTR("LED")) == 0) {
 		serial_free_message();
@@ -175,7 +174,7 @@ void loop(void) {
 		TOGGLE(PIN_LED);
 	} else if (strcmp_P(rx_buf, PSTR("READ")) == 0) {
 		serial_free_message();
-		// Duplicate the data
+		// Duplicate the data in analog input accumulators.
 		accus_t accu;
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
 			// The buffer is so small it makes more sense to use copying than
@@ -207,7 +206,6 @@ void loop(void) {
 			   err_ratio);
 	} else if (strcmp_P(rx_buf, PSTR("TIME")) == 0) {
 		serial_free_message();
-		// Get time
 		time(&ts_now);
 		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&ts_now));
 	} else if (sscanf_P(rx_buf, PSTR("VOLTAGE %" SCNu16), &target_millivoltage) == 1) {
@@ -217,17 +215,13 @@ void loop(void) {
 		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Set voltage to %f V"), target_voltage);
 	} else if (sscanf_P(rx_buf, PSTR("TIME %lu %" SCNd32 " %lu %" SCNd32), &ts_now, &zone_now, &ts_turn, &zone_turn) == 4) {
 		serial_free_message();
-		// Set time
 		clock_set(ts_now, zone_now, ts_turn, zone_turn);
 	} else if (strcmp_P(rx_buf, PSTR("VERSION")) == 0) {
 		serial_free_message();
 		strcpy_P(serial_tx, version);
 	} else {
-		// Do not answer to unrelated messages. This is
-		// important to handle point-to-multipoint protocol:
-		// We are not answering packets not related to us.
-
-		// Dump everything. This is temporary to ease debugging.
+		// Dump unknown message. Useful for debugging weird
+		// input characters.
 		char *out = serial_tx;
 		strcpy_P(serial_tx, PSTR("Invalid data:"));
 		out += 13;
