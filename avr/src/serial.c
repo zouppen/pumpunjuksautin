@@ -91,25 +91,23 @@ bool serial_is_transmitting(void) {
 void serial_tx_line(void) {
 	// Search for terminating NUL.
 	uint8_t len = strnlen(serial_tx, SERIAL_TX_LEN);
+
+	// Not going to send any data which is not NULL terminated.
 	if (len == SERIAL_TX_LEN) {
-		// This is fine for us, but still storing the incident.
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 			counts.too_long_tx++;
 		}
+		return;
+	}
 
-		// Put an ellipsis to mark cut message
-		serial_tx[SERIAL_TX_LEN-3] = '.';
-		serial_tx[SERIAL_TX_LEN-2] = '.';
-		
-		// Leave space for the upcoming newline char
-		len--;
+	// The message might have been cut. Indicate it with '>' sign.
+	if (len+1 >= SERIAL_TX_LEN) {
+		serial_tx[SERIAL_TX_LEN-2] = '>';
 	}
 	
 	// Place newline at the end (overriding NUL) and send it.
 	serial_tx[len] = '\n';
-	len++;
-
-	serial_tx_bin(len);
+	serial_tx_bin(len+1);
 }
 
 void serial_tx_bin(uint8_t const len) {
