@@ -21,9 +21,22 @@ Every input is read-only.
 
 ## Holding registers
 
-|  Address | Registers | Read | Write | Data type | Unit   | Description                |
-|---------:|----------:|:----:|:-----:|-----------|--------|----------------------------|
-| `0x0001` |         1 | ✓    |       | int16     | 0.01°C | Tank temperature           |
-| `0x0002` |         1 | ✓    |       | int16     | 0.01°C | Outside temperature        |
-| `0x0001` |         1 | ✓    | ✓     | int16     | mV     | Juksautus target voltage   |
-| `0x0010` |        16 | ✓    |       | char[]    |        | Version string, NUL padded |
+A single register is 16-bit value. All values spanning multiple
+registers have big-endian byte order.
+
+| Address | Size | Read | Write | Data type | Unit   | Description                                   |
+|---------|-----:|:----:|:-----:|-----------|--------|-----------------------------------------------|
+| TBD     |   16 | X    |       | char[32]  |        | Firmware version string, NUL padded           |
+| TBD     |    2 | X    | X     | uint32    | unix   | Current system time                           |
+| TBD     |    2 | X    | X     | int32     | gmtoff | Current UTC offset                            |
+| TBD     |    2 | X    | X     | uint32    | unix   | Time of next UTC offset change. 0 if not set. |
+| TBD     |    2 | X    | X     | int32     | gmtoff | Next UTC offset                               |
+| TBD     |    1 | X    |       | int16     | 0.01°C | Tank temperature                              |
+| TBD     |    1 | X    |       | int16     | 0.01°C | Outside temperature                           |
+| TBD     |    1 | X    | X     | int16     | mV     | Juksautus target voltage                      |
+
+## Legend
+
+* **size**: Data length in number of registers (`nb` in libmodbus)
+* **unix**: Number of seconds since UNIX epoch
+* **gmtoff**: UTC offset in seconds
