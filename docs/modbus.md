@@ -21,8 +21,6 @@ Every input is read-only.
 
 ## Holding registers
 
-Registers are read-write.
-
 |  Address | Registers | Read | Write | Data type | Unit   | Description                |
 |---------:|----------:|:----:|:-----:|-----------|--------|----------------------------|
 | `0x0001` |         1 | ✓    |       | int16     | 0.01°C | Tank temperature           |
