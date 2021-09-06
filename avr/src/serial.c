@@ -40,10 +40,10 @@ typedef enum {
 char serial_tx[SERIAL_TX_LEN]; // Outgoing serial data
 
 // Double buffering for rx
-static uint8_t serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
-static uint8_t serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
-static uint8_t *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
-static uint8_t *serial_rx_front = NULL; // Contains front buffer if it's not yet freed
+static char serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
+static char serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
+static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
+static char *serial_rx_front = NULL; // Contains front buffer if it's not yet freed
 static uint8_t serial_rx_front_len; // Contains front buffer data length
 static uint8_t serial_tx_len; // Total number of bytes to send
 
@@ -201,7 +201,7 @@ static void transmit_now()
 	}
 }
 
-uint8_t serial_get_message(uint8_t **const buf)
+uint8_t serial_get_message(char **const buf)
 {
 	int len;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -257,7 +257,7 @@ ISR(USART_TX_vect)
 // Called when there is opportunity to fill TX FIFO.
 ISR(USART_UDRE_vect)
 {
-	uint8_t const out = serial_tx[serial_tx_i];
+	char const out = serial_tx[serial_tx_i];
 
 	if (serial_tx_len == serial_tx_i + 1) {
 		// We are going to transmit the last
@@ -279,7 +279,7 @@ ISR(USART_RX_vect)
 	clock_arm_timer(MODBUS_SILENCE);
 	rx_state = rx_active;
 
-	uint8_t in = UDR0;
+	char in = UDR0;
 
 	// Using >= in comparison instead of > because we got a
 	// character after the buffer is already full (no place to put

@@ -135,13 +135,8 @@ void loop(void) {
 	// frame to parse.
 	if (serial_is_transmitting()) return;
 
-	// Using char* because of strcmp & friends. serial_get_message()
-	// is giving uint8_t* but it's less error prone to suppress
-	// warnings than to do an unconditional typecast.
 	char *rx_buf;
-#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 	int len = serial_get_message(&rx_buf);
-#pragma GCC diagnostic pop
 
 	// Continue only if we have got a message.
 	if (rx_buf == NULL) return;
