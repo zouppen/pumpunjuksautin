@@ -44,12 +44,12 @@ static char serial_rx_a[SERIAL_RX_LEN]; // Receive buffer a
 static char serial_rx_b[SERIAL_RX_LEN]; // Receive buffer b
 static char *serial_rx_back = serial_rx_a; // Back buffer (for populating data)
 static char *serial_rx_front = NULL; // Contains front buffer if it's not yet freed
-static uint8_t serial_rx_front_len; // Contains front buffer data length
-static uint8_t serial_tx_len; // Total number of bytes to send
+static buflen_t serial_rx_front_len; // Contains front buffer data length
+static buflen_t serial_tx_len; // Total number of bytes to send
 
-static uint8_t serial_rx_i = 0; // Receive buffer position.
-				// In case of an overflow it will be ~0.
-static uint8_t serial_tx_i = 0; // Send buffer position
+static buflen_t serial_rx_i = 0; // Receive buffer position In case of
+				 // an overflow it will be ~0.
+static buflen_t serial_tx_i = 0; // Send buffer position
 static volatile rx_state_t rx_state = rx_tx_ready;
 static volatile bool tx_state = false; // Is tx start requested
 
@@ -90,7 +90,7 @@ bool serial_is_transmitting(void) {
 
 void serial_tx_line(void) {
 	// Search for terminating NUL.
-	uint8_t len = strnlen(serial_tx, SERIAL_TX_LEN);
+	buflen_t len = strnlen(serial_tx, SERIAL_TX_LEN);
 
 	// Not going to send any data which is not NULL terminated.
 	if (len == SERIAL_TX_LEN) {
@@ -110,7 +110,7 @@ void serial_tx_line(void) {
 	serial_tx_bin(len+1);
 }
 
-void serial_tx_bin(uint8_t const len) {
+void serial_tx_bin(buflen_t const len) {
 	// The buffer is allowed to be completely full, that's why
 	// comparing greater than instead of greater-than-equals.
 	if (len > SERIAL_TX_LEN) {
@@ -201,7 +201,7 @@ static void transmit_now()
 	}
 }
 
-uint8_t serial_get_message(char **const buf)
+buflen_t serial_get_message(char **const buf)
 {
 	int len;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {

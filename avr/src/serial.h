@@ -1,7 +1,11 @@
 // RS-485 interface
 
+// Serial buffer lengths. If you want to go beyond 255, remember to
+// change buflen_t from uint8_t to uint16_t.
 #define SERIAL_RX_LEN 50
 #define SERIAL_TX_LEN 90
+
+typedef uint8_t buflen_t;
 
 typedef struct {
 	int good;         // Number of good frames
@@ -22,7 +26,7 @@ bool serial_is_transmitting(void);
 // Gets a message from serial receive buffer, if any.  The returned
 // buffer is immutable. Buffer must be released after processing with
 // serial_free_message()
-uint8_t serial_get_message(char **const buf);
+buflen_t serial_get_message(char **const buf);
 
 // Release receive buffer. This is important to do as soon as
 // possible. If frame is not freed before back buffer is filled,
@@ -34,7 +38,7 @@ void serial_free_message(void);
 void serial_tx_line(void);
 
 // Start half-duplex transmission (disables rx). Binary safe.
-void serial_tx_bin(uint8_t const len);
+void serial_tx_bin(buflen_t const len);
 
 // Get serial counters and zero them
 serial_counter_t pull_serial_counters(void);

@@ -136,7 +136,7 @@ void loop(void) {
 	if (serial_is_transmitting()) return;
 
 	char *rx_buf;
-	int len = serial_get_message(&rx_buf);
+	buflen_t len = serial_get_message(&rx_buf);
 
 	// Continue only if we have got a message.
 	if (rx_buf == NULL) return;
