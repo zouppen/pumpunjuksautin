@@ -15,10 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// Note, many macro values are defined in <avr/io.h> and
-// <avr/interrupts.h>, which are included automatically by
-// the Arduino interface
-
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
