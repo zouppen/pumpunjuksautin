@@ -22,4 +22,4 @@ else(Git_FOUND)
 endif()
 
 # Producing source file with the version data
-configure_file(${REAL_SOURCE_DIR}/version.template ${CMAKE_CURRENT_SOURCE_DIR}/version.c ESCAPE_QUOTES)
+configure_file(${REAL_SOURCE_DIR}/version.template ${CMAKE_CURRENT_SOURCE_DIR}/generated/version.c ESCAPE_QUOTES)
