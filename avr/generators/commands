@@ -1,0 +1,93 @@
+#!/bin/sh -eu
+
+sort_and_append() {
+    # Sort outputs to make them searchable using bsearch(). Remove
+    # last comma.
+    sort "$1" | sed '$ s/,$//'
+}
+
+proto() {
+    # Produce C prototype for given function
+    test "$2" = NULL || echo "cmd_$1_t ${2#&};" >&3
+}
+
+pointerize() {
+    # Prefix '&' if it's a function, otherwise NULL
+    if test "$1" = - -o "$1" = NULL; then
+	echo -n NULL
+    else
+	echo -n "&$1"
+    fi
+}
+
+protos="`mktemp`"
+ascii="`mktemp`"
+modbus="`mktemp`"
+exec 3>"$protos"
+exec 4>"$ascii"
+exec 5>"$modbus"
+
+# File header
+cat <<EOF
+// Automatically generated file. Edit avr/commands.tsv instead!
+#include <stdlib.h>
+#include <avr/pgmspace.h>
+#include "cmd.h"
+
+EOF
+
+# Skip header line
+read foo
+
+while read r_type r_address r_name r_read r_write r_printer r_scanner; do
+    # Make functions pointers
+    r_read="`pointerize "$r_read"`"
+    r_write="`pointerize "$r_write"`"
+    r_printer="`pointerize "$r_printer"`"
+    r_scanner="`pointerize "$r_scanner"`"
+    
+    # PROGMEM strings must be outside of array initialization
+    echo "static char const name_$r_name[] PROGMEM = \"$r_name\";"
+    proto read "$r_read"
+    proto write "$r_write"
+    proto print "$r_printer"
+    proto scan "$r_scanner"
+    
+    # Produce lines for both ASCII interface and Modbus
+    action="{ $r_read, $r_write }"
+    echo "	{ name_$r_name, $action, $r_printer, $r_scanner }," >&4
+    echo "	{`printf %2d  "$r_type"`, 0x`printf %04x "$r_address"`, $action }," >&5
+done
+
+# Prototypes. Only once per function.
+echo
+sort -u $protos
+
+# Ascii table header
+cat <<EOF
+
+cmd_ascii_t const cmd_ascii[] PROGMEM = {
+EOF
+
+# ASCII table content
+sort_and_append "$ascii"
+
+# Boilerplate between ASCII and Modbus tables
+cat <<EOF
+};
+
+cmd_modbus_t const cmd_modbus[] PROGMEM = {
+EOF
+
+# Modbus table content
+sort_and_append "$modbus"
+
+# Trailing content
+cat <<EOF
+};
+
+int const cmd_ascii_len = sizeof(cmd_ascii) / sizeof(*cmd_ascii);
+int const cmd_modbus_len = sizeof(cmd_modbus) / sizeof(*cmd_modbus);
+EOF
+
+rm "$protos" "$ascii" "$modbus"

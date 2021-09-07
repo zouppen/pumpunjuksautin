@@ -1,0 +1,56 @@
+#ifndef CMD_H_
+#define CMD_H_
+
+// Command interface data types
+
+#include "serial.h"
+
+// Function pointer for read command. Populates buffer of given length
+// and returns number of bytes written
+typedef buflen_t (cmd_read_t)(char *const buf_out, buflen_t count);
+
+// Function pointer for write command. Reads buffer of given length
+// and return number of bytes processed.
+typedef buflen_t (cmd_write_t)(char const *const buf_in, buflen_t count);
+
+// Function which parses text input and passes it to given write
+// function. Returns number of bytes consumed.
+typedef buflen_t (cmd_scan_t)(char const *const buf_in, buflen_t count, cmd_write_t *writer);
+
+// Function for textual output. It takes in the buffer where reader
+// has already written the values and it rewrites the contents to
+// ASCII form.
+typedef buflen_t (cmd_print_t)(char *const buf_out, buflen_t count);
+
+typedef enum {
+	COIL = 0,
+	DISCRETE_INPUT = 1,
+	INPUT_REGISTER = 3,
+	HOLDING_REGISTER = 4
+} cmd_type_t;
+
+typedef struct {
+	cmd_read_t *read;      // NULL if not readable
+	cmd_write_t *write;    // NULL if not writable
+} cmd_action_t;
+
+typedef struct {
+	char const *name;     // ASCII command name, PROGMEM storage
+	cmd_action_t action;  // Read and write actions
+	cmd_print_t *printer; // Output formatter from raw value to ASCII. NULL if not readable.
+	cmd_scan_t *scanner;  // Input scanner from ASCII to raw value. NULL if not writable.
+} cmd_ascii_t;
+
+typedef struct {
+	cmd_type_t regtype;   // Register type, see definition
+	uint16_t addr;        // Modbus address
+	cmd_action_t action;  // Read and write actions
+} cmd_modbus_t;
+
+// ASCII command interface. Sorted by command name.
+extern cmd_ascii_t const cmd_ascii[];
+
+// Modbus command interface. Sorted by (command type, address).
+extern cmd_modbus_t const cmd_modbus[];
+
+#endif // CMD_H_

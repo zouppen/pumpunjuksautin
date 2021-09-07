@@ -94,7 +94,10 @@ file(GLOB SRC_FILES "src/*.c") # Load all files in src folder
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 # Create one target
-add_executable(${PRODUCT_NAME} ${SRC_FILES} ${CMAKE_CURRENT_BINARY_DIR}/generated/version.c)
+add_executable(${PRODUCT_NAME} ${SRC_FILES} ${CMAKE_CURRENT_BINARY_DIR}/generated/version.c $<TARGET_OBJECTS:commands>)
+
+add_library(commands OBJECT ${CMAKE_CURRENT_BINARY_DIR}/generated/cmd.c)
+target_include_directories(commands PRIVATE src)
 
 # Rename the output to .elf as we will create multiple files
 set_target_properties(${PRODUCT_NAME} PROPERTIES OUTPUT_NAME ${PRODUCT_NAME}.elf)
@@ -129,4 +132,13 @@ add_custom_command(
 	   COMMAND ${CMAKE_COMMAND}
 	   -D REAL_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
 	   -P ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake
+)
+
+# Generator of cmd.c source file.
+add_custom_command(
+  DEPENDS "commands.tsv" "generators/commands"
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/cmd.c
+  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/generators/commands
+	  <${CMAKE_CURRENT_SOURCE_DIR}/commands.tsv
+	  >${CMAKE_CURRENT_BINARY_DIR}/generated/cmd.c
 )
