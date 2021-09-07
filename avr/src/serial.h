@@ -1,4 +1,10 @@
-// RS-485 interface
+#ifndef SERIAL_H_
+#define SERIAL_H_
+
+// Binary safe RS-485 interface
+
+#include <stdint.h>
+#include <stdbool.h>
 
 // Serial buffer lengths. If you want to go beyond 255, remember to
 // change buflen_t from uint8_t to uint16_t.
@@ -42,3 +48,5 @@ void serial_tx_bin(buflen_t const len);
 
 // Get serial counters and zero them
 serial_counter_t pull_serial_counters(void);
+
+#endif // SERIAL_H_

@@ -1,3 +1,6 @@
+#ifndef CMD_PIN_H_
+#define CMD_PIN_H_
+
 // MACROS FOR EASY PIN HANDLING FOR ATMEL GCC-AVR
 // Copied from https://stackoverflow.com/a/25986570/514723
 
@@ -15,3 +18,5 @@
 #define LOW(pin)            _CLEAR(PORT,pin)
 #define TOGGLE(pin)         _TOGGLE(PORT,pin)
 #define READ(pin)           _GET(PIN,pin)
+
+#endif // CMD_PIN_H_

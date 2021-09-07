@@ -1,20 +1,25 @@
+#ifndef CMD_CLOCK_H_
+#define CMD_CLOCK_H_
+
 /*
-   Use dividers and counters to get 1 second from the clock
-   frequency. You need to get F_CPU = CLOCK_PRESCALER * CLOCK_A *
-   CLOCK_B. The variables are configurable in CMake.
+  Real-time clock
 
-   We use ATmega328P TIMER2 which is an 8-bit timer. So both CLOCK_A
-   and CLOCK_B must be integers between 1 and 255. Prescaler can have
-   value of 1, 8, 32, 64, 128, 256 or 1024 only.
+  Using dividers and counters to get 1 second from the clock
+  frequency. You need to get F_CPU = CLOCK_PRESCALER * CLOCK_A *
+  CLOCK_B. The variables are configurable in CMake.
 
-   For example, when prescaler is 256 and CLOCK_A is 250, we generate
-   Counter2 compare match A interrupt every 250x256 cycles which is 4
-   ms when F_CPU is 16MHz. It is then counted to full seconds by an
-   additional 250 counter CLOCK_B.
+  We use ATmega328P TIMER2 which is an 8-bit timer. So both CLOCK_A
+  and CLOCK_B must be integers between 1 and 255. Prescaler can have
+  value of 1, 8, 32, 64, 128, 256 or 1024 only.
 
-   Counter2 compare match A is used for the real-time clock, so
-   compare match B interrupt is available for accuracy timing, having
-   granularity of prescaler / F_CPU = 16µs.
+  For example, when prescaler is 256 and CLOCK_A is 250, we generate
+  Counter2 compare match A interrupt every 250x256 cycles which is 4
+  ms when F_CPU is 16MHz. It is then counted to full seconds by an
+  additional 250 counter CLOCK_B.
+
+  Counter2 compare match A is used for the real-time clock, so
+  compare match B interrupt is available for accuracy timing, having
+  granularity of prescaler / F_CPU = 16µs.
 */
 
 #include <time.h>
@@ -37,3 +42,5 @@ bool clock_is_set(void);
 // Arm timer. Timeout unit is prescaler / F_CPU = 16µs and maximum
 // delay of prescaler * COUNT_A / F_CPU = 4ms.
 void clock_arm_timer(uint8_t timeout);
+
+#endif // CMD_CLOCK_H_
