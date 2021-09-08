@@ -73,7 +73,7 @@ static bool process_write(char *buf)
 		return false;
 	}	
 	if (scanner == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" doesn't have scanner"), name);
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" is writable via Modbus only!"), name);
 		return false;
 	}
 
