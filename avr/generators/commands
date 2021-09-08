@@ -16,7 +16,7 @@ pointerize() {
     if test "$1" = - -o "$1" = NULL; then
 	echo -n NULL
     else
-	echo -n "&$1"
+	echo -n "&cmd_$1"
     fi
 }
 

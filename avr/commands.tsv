@@ -1,2 +1,2 @@
 type	address	name	read	write	printer	scanner
-4	1	led	-	cmd_led_write	print_int16	scan_int16
+4	1	led	-	led_write	-	scan_bool
