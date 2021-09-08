@@ -13,9 +13,10 @@ typedef buflen_t (cmd_read_t)(char *const buf_out, buflen_t count);
 // and return number of bytes processed.
 typedef buflen_t (cmd_write_t)(char const *const buf_in, buflen_t count);
 
-// Function which parses text input and passes it to given write
-// function. Returns number of bytes consumed.
-typedef buflen_t (cmd_scan_t)(char const *const buf_in, buflen_t count, cmd_write_t *writer);
+// Function which parses already tokenized (null terminated) text and
+// passes it to given write function. Returns true if the scanning
+// succeeded.
+typedef bool (cmd_scan_t)(char const *const buf_in, cmd_write_t *writer);
 
 // Function for textual output. It takes in the buffer where reader
 // has already written the values and it rewrites the contents to
@@ -49,8 +50,10 @@ typedef struct {
 
 // ASCII command interface. Sorted by command name.
 extern cmd_ascii_t const cmd_ascii[];
+extern int const cmd_ascii_len;
 
 // Modbus command interface. Sorted by (command type, address).
 extern cmd_modbus_t const cmd_modbus[];
+extern int const cmd_modbus_len;
 
 #endif // CMD_H_
