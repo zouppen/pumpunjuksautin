@@ -93,7 +93,10 @@ static bool process_write(char *buf)
 
 	// If it's the last, we succeeded. Otherwise doing a tail
 	// recursion until we run out of data.
-	if (buf == NULL) return true;
+	if (buf == NULL) {
+		strcpy_P(serial_tx, PSTR("OK"));
+		return true;
+	}
 	return process_write(buf);
 }
 
