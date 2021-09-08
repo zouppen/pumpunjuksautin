@@ -59,8 +59,7 @@ static bool process_write(char *buf)
 	cmd_ascii_t *cmd = find_cmd(name);
 
 	if (cmd == NULL) {
-		// TODO: See issue #15
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Unknown field: \"%1s\""), name);
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Unknown field: \"%s\""), name);
 		return false;
 	}
 
@@ -131,11 +130,13 @@ bool interface_ascii(char *buf, buflen_t len)
 
 	// Operation type parsing
 	char *const op = strsep(&buf, " ");
-	if (strcasecmp_P(op, PSTR("read")) == 0) {
-		return process_read(buf);
-	}
-	if (strcasecmp_P(op, PSTR("write")) == 0) {
-		return process_write(buf);
+	if (buf != NULL) {
+		if (strcasecmp_P(op, PSTR("read")) == 0) {
+			return process_read(buf);
+		}
+		if (strcasecmp_P(op, PSTR("write")) == 0) {
+			return process_write(buf);
+		}
 	}
 
 	strcpy_P(serial_tx, PSTR("Unknown operation. Expecting READ or WRITE"));
