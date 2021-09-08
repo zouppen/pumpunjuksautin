@@ -16,7 +16,7 @@ Every input is read-only.
 
 |  Address | False       | True      | Description                     |
 |---------:|-------------|-----------|---------------------------------|
-| `0x0001` | LED off     | LED on    | Error LED status                |
+| `0x0001` | LED off     | LED on    | Heat pump error LED status      |
 | `0x0002` | Clock unset | Clock set | Internal real-time clock status |
 
 ## Holding registers
@@ -31,9 +31,11 @@ registers have big-endian byte order.
 | TBD     |    2 | X    | X     | int32     | gmtoff | Current UTC offset                            |
 | TBD     |    2 | X    | X     | uint32    | unix   | Time of next UTC offset change. 0 if not set. |
 | TBD     |    2 | X    | X     | int32     | gmtoff | Next UTC offset                               |
-| TBD     |    1 | X    |       | int16     | 0.01°C | Tank temperature                              |
+| TBD     |    1 | X    |       | int16     | 0.01°C | Heat pump temperature (K9 thermistor line)    |
+| TBD     |    1 | X    |       | int16     | 0.01°C | Tank temperature (K5 thermistor line)         |
 | TBD     |    1 | X    |       | int16     | 0.01°C | Outside temperature                           |
 | TBD     |    1 | X    | X     | int16     | mV     | Juksautus target voltage                      |
+| TBD     |    1 | X    |       | int16     | mV     | Juksautus measured voltage                    |
 
 ## Legend
 
