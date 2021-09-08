@@ -59,7 +59,8 @@ static bool process_write(char *buf)
 	cmd_ascii_t *cmd = find_cmd(name);
 
 	if (cmd == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Unknown field: %s"), name);
+		// TODO: See issue #15
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Unknown field: \"%1s\""), name);
 		return false;
 	}
 
@@ -68,18 +69,18 @@ static bool process_write(char *buf)
 	cmd_write_t const *writer = pgm_read_ptr_near(&(cmd->action.write));
 
 	if (writer == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field %s is not writabled"), name);
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" is not writabled"), name);
 		return false;
 	}	
 	if (scanner == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field %s doesn't have scanner"), name);
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" doesn't have scanner"), name);
 		return false;
 	}
 
 	// We need the value as well
 	char *const value = strsep(&buf, " ");
 	if (value == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field %s value not set"), name);
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" value not set"), name);
 		return false;
 	}
 	
@@ -87,7 +88,7 @@ static bool process_write(char *buf)
 	// just doing the magic!
 	bool ok = scanner(value, writer);
 	if (!ok) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field %s write failed"), name);
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" write failed"), name);
 		return false;
 	}
 

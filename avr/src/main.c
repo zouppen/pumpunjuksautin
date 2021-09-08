@@ -15,6 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// WIP WIP WIP WIP
+#include "cmd.h"
+#include "interface_ascii.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -108,29 +112,8 @@ float accu_mean(accu_t *a) {
 	return (float)a->sum / a->count;
 }
 
-// Replace line ending (LF or CRLF) from the incoming message with NUL
-// character.
-static bool strip_line_ending(char *const buf, int const len)
-{
-	// No LF is a showstopper
-	if (buf[len-1] != '\n') return false;
-
-	// Clean trailing CR and LF
-	buf[len-1] = '\0';
-	if (len >= 2 && buf[len-2] == '\r') {
-		buf[len-2] = '\0';
-	}
-
-	return true;
-}
-
 // Processor loop
 void loop(void) {
-	static uint16_t i = ~0;
-	time_t ts_now, ts_turn;
-	int32_t zone_now, zone_turn;
-	uint16_t target_millivoltage;
-
 	// Continue only if transmitter is idle and we have a new
 	// frame to parse.
 	if (serial_is_transmitting()) return;
@@ -142,94 +125,17 @@ void loop(void) {
 	if (rx_buf == NULL) return;
 
 	// Incoming message counter
+	static uint16_t i = ~0;
 	i++;
 
 	// Marker if any serial is written.
 	*serial_tx = '\0';
 
-	// Parse command. NB! Call serial_free_message() ASAP after
-	// rx_buf is no longer peeked to avoid timeouts.
-	if (!strip_line_ending(rx_buf, len)) {
-		serial_free_message();
-		strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
-	} else if (*rx_buf == '\0') {
-		serial_free_message();
-		strcpy_P(serial_tx, PSTR("Empty message"));
-	} else if (strcmp_P(rx_buf, PSTR("PING")) == 0) {
-		serial_free_message();
-		strcpy_P(serial_tx, PSTR("PONG"));
-	} else if (strcmp_P(rx_buf, PSTR("LED")) == 0) {
-		serial_free_message();
-		// Useful for testing if rx works because we see
-		// visual indication even if tx is bad.
-		TOGGLE(PIN_LED);
-	} else if (strcmp_P(rx_buf, PSTR("READ")) == 0) {
-		serial_free_message();
-		// Duplicate the data in analog input accumulators.
-		accus_t accu;
-		ATOMIC_BLOCK(ATOMIC_FORCEON) {
-			// The buffer is so small it makes more sense to use copying than
-			// front/back buffering at the moment.
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-			// We are safely fiddling with volatile, so we just
-			// turn off warnings at this stage.
-			memcpy(&accu, &v_accu, sizeof(accu));
-			memset(&v_accu, 0, sizeof(v_accu));
-#pragma GCC diagnostic pop
-		}
+	// Process the message
+	bool ok = interface_ascii(rx_buf, len);
+	serial_free_message();
 
-		float ratio = accu_mean(&accu.juksautin);
-		float int_temp = (accu_mean(&accu.int_temp)-324.31)/1.22;
-		float outside_temp = (accu_mean(&accu.outside_temp)) * VOLT;
-		float k9_raw = accu_mean(&accu.k9_raw) * VOLT;
-		float err_ratio = accu_mean(&accu.err);
-
-		snprintf_P(serial_tx,
-			   SERIAL_TX_LEN, PSTR("%" PRIu16 ": internal: %d°C\noutside: %dmV %dohm\ntank: %dmv %dohm %d%% %" PRIu16 "\nError: %f"),
-			   i,
-			   (int)int_temp,
-			   (int)(outside_temp * 1000),
-			   (int)compute_real_temp(outside_temp, 0, 0.822, 4434),
-			   (int)(k9_raw*1000),
-			   (int)compute_real_temp(k9_raw, ratio, 0.944, 1516),
-			   (int)(ratio*100),
-			   accu.juksautin.count,
-			   err_ratio);
-	} else if (strcmp_P(rx_buf, PSTR("TIME")) == 0) {
-		serial_free_message();
-		time(&ts_now);
-		strftime(serial_tx, SERIAL_TX_LEN, "%F %T%z", localtime(&ts_now));
-	} else if (sscanf_P(rx_buf, PSTR("VOLTAGE %" SCNu16), &target_millivoltage) == 1) {
-		serial_free_message();
-		float target_voltage = (float)target_millivoltage / 1000;
-		set_voltage(target_voltage);
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Set voltage to %f V"), target_voltage);
-	} else if (sscanf_P(rx_buf, PSTR("TIME %lu %" SCNd32 " %lu %" SCNd32), &ts_now, &zone_now, &ts_turn, &zone_turn) == 4) {
-		serial_free_message();
-		clock_set(ts_now, zone_now, ts_turn, zone_turn);
-	} else if (strcmp_P(rx_buf, PSTR("VERSION")) == 0) {
-		serial_free_message();
-		strcpy_P(serial_tx, version);
-	} else {
-		// Dump unknown message. Useful for debugging weird
-		// input characters.
-		char *out = serial_tx;
-		strcpy_P(serial_tx, PSTR("Invalid data:"));
-		out += 13;
-
-		for (int i=0; rx_buf[i] != '\0'; i++) {
-			out += snprintf(out, serial_tx + SERIAL_TX_LEN - out, " %02hhx", rx_buf[i]);
-
-			if (out >= serial_tx + SERIAL_TX_LEN) {
-				// We have run out of buffer space. Stop!
-				break;
-			}
-		}
-
-		serial_free_message();
-	}
-
-	// Send line if there is any.
+	// Send the answer if we have one
 	if (*serial_tx != '\0') {
 	    serial_tx_line();
 	}
