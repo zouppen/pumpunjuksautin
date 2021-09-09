@@ -61,7 +61,22 @@ void clock_init(void)
 	set_dst(unixy_dst);
 }
 
-void clock_set(time_t const ts_now, int32_t const zone_now, time_t const ts_turn, int32_t const zone_turn)
+void clock_set_time(time_t const ts_now)
+{
+	// AVR uses Zigbee epoch. Converting from UNIX epoch
+	time_t const avr_now = ts_now - UNIX_OFFSET;
+
+	// Make sure we do the clock update stuff atomically
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		// Reset counters. Not resetting TIMER2 because it
+		// would interfers with UART delay timers.
+		counter_b = 0;
+		set_system_time(avr_now);
+		is_set = true;
+	}
+}
+
+void clock_set_zones(int32_t const zone_now, time_t const ts_turn, int32_t const zone_turn)
 {
 	// DST structure in UNIX and AVR-libc are different. Unix uses
 	// time zone offset directly but avr-libc thinks traditionally
@@ -77,19 +92,13 @@ void clock_set(time_t const ts_now, int32_t const zone_now, time_t const ts_turn
 	int32_t const new_turn_offset = ts_turn == 0 ? 0 : zone_turn - zone_now;
 
 	// AVR uses Zigbee epoch. Converting from UNIX epoch
-	time_t const avr_now = ts_now - UNIX_OFFSET;
 	time_t const new_turn_avr = ts_turn - UNIX_OFFSET;
 
 	// Make sure we do the clock update stuff atomically
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		// Reset counters. Not resetting TIMER2 because it
-		// would interfers with UART delay timers.
-		counter_b = 0;
-		set_system_time(avr_now);
 		set_zone(pseudo_zone);
 		clock_turn_avr = new_turn_avr;
 		clock_turn_offset = new_turn_offset;
-		is_set = true;
 	}
 }
 
