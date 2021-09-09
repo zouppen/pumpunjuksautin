@@ -37,7 +37,7 @@
 
 // Changes indicator LED status. Consumes 1 byte.
 buflen_t cmd_write_led(char const *const buf_in, buflen_t count) {
-	if (count == 0) return 0;
+	if (count == 0) return OUT_OF_BUFFER;
 	if (*buf_in) {
 		HIGH(PIN_LED);
 	} else {
@@ -71,7 +71,7 @@ bool cmd_scan_bool(char const *const buf_in, cmd_write_t *writer) {
 		return false;
 	}
 	// Pass it on to Modbus handler.
-	return writer(&truth, 1);
+	return writer(&truth, 1) == 1;
 }
 
 // Outputs boolean value.
