@@ -102,7 +102,7 @@ buflen_t cmd_print_time(char *const buf_out, buflen_t count)
 	if (count < 4) return OUT_OF_BUFFER;
 
 	time_t now = __builtin_bswap32(*(uint32_t*)buf_out);
-	size_t wrote = strftime(buf_out, count, "%F %T%z", localtime(&now));
+	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
 	return wrote ? wrote-1 : OUT_OF_BUFFER;
 }
 
