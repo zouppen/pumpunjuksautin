@@ -82,8 +82,8 @@ void clock_set(time_t const ts_now, int32_t const zone_now, time_t const ts_turn
 
 	// Make sure we do the clock update stuff atomically
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		// Reset counters
-		TCNT2 = 0;
+		// Reset counters. Not resetting TIMER2 because it
+		// would interfers with UART delay timers.
 		counter_b = 0;
 		set_system_time(avr_now);
 		set_zone(pseudo_zone);
