@@ -22,6 +22,7 @@
 #include "cmd.h"
 #include "pin.h"
 #include "hardware_config.h"
+#include "clock.h"
 
 #define OUT_OF_BUFFER (~0)
 
@@ -94,6 +95,29 @@ buflen_t cmd_read_time(char *const buf_out, buflen_t count)
 	uint32_t *dest = (uint32_t*)buf_out;
 	*dest = __builtin_bswap32(time(NULL));
 	return 4;
+}
+
+
+// Writes current time. Consumes 2 16-bit registers
+buflen_t cmd_write_time(char const *const buf_in, buflen_t count)
+{
+	if (count < 4) return OUT_OF_BUFFER;
+	time_t now = __builtin_bswap32(*(uint32_t*)buf_in);
+	clock_set_time(now);
+	return 4;
+}
+
+// Writes time zone information.
+buflen_t cmd_write_time_zone(char const *const buf_in, buflen_t count) {
+	// Collect values
+	if (count < 12) return OUT_OF_BUFFER;
+
+	int32_t zone_now = __builtin_bswap32(*(int32_t*)buf_in); 
+	time_t ts_turn = __builtin_bswap32(*(uint32_t*)(buf_in + 4));
+	int32_t zone_turn = __builtin_bswap32(*(int32_t*)(buf_in + 8));
+
+	clock_set_zones(zone_now, ts_turn, zone_turn);
+	return 12;
 }
 
 // Formats big-endian time in ISO 8601 format with time zone
