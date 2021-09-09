@@ -85,7 +85,7 @@ buflen_t cmd_print_bool(char *const buf_out, buflen_t count)
 }
 
 // Reads current time to 2 16-bit registers
-buflen_t cmd_read_clock(char *const buf_out, buflen_t count)
+buflen_t cmd_read_time(char *const buf_out, buflen_t count)
 {
 	// Has to have space for 2 16-bit registers.
 	if (count < 4) return OUT_OF_BUFFER;
