@@ -18,5 +18,6 @@
 #define LOW(pin)            _CLEAR(PORT,pin)
 #define TOGGLE(pin)         _TOGGLE(PORT,pin)
 #define READ(pin)           _GET(PIN,pin)
+#define STATE(pin)          _GET(PORT,pin)
 
 #endif // CMD_PIN_H_
