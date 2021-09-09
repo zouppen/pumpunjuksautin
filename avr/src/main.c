@@ -59,7 +59,6 @@ static void handle_int_temp(uint16_t val);
 static void handle_outside_temp(uint16_t val);
 static void handle_err(uint16_t val);
 static float compute_real_temp(float mv, float ratio, float um, float rm);
-static bool strip_line_ending(char *const buf, int const len);
 
 #define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
 

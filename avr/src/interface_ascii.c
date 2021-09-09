@@ -23,10 +23,12 @@
 #include "serial.h"
 #include "cmd.h"
 
+#define SERIAL_TX_END (serial_tx + SERIAL_TX_LEN)
+
 static bool strip_line_ending(char *buf, int const len);
-static bool process_read(char *buf);
+static bool process_read(char *buf, char *serial_out);
 static bool process_write(char *buf);
-static cmd_ascii_t *find_cmd(char const *const name);
+static cmd_ascii_t const *find_cmd(char const *const name);
 static int cmd_comparator(const void *key_void, const void *item_void);
 
 // Replace line ending (LF or CRLF) from the message with NUL
@@ -45,18 +47,73 @@ static bool strip_line_ending(char *const buf, int const len)
 	return true;
 }
 
-static bool process_read(char *buf)
+// Process read requests, writing to serial buffer.
+static bool process_read(char *buf, char *serial_out)
 {
-	strcpy_P(serial_tx, PSTR("Not yet implemented"));
-	// Valid command though, so answering true
-	return true;
+	// Collecting parameter name to read
+	char const *const name = strsep(&buf, " ");
+	cmd_ascii_t const *const cmd = find_cmd(name);
+
+	if (cmd == NULL) {
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Unknown field: \"%s\""), name);
+		return false;
+	}
+
+	// Collecting scanner and writer from PROGMEM storage
+	cmd_print_t const *printer = pgm_read_ptr_near(&(cmd->printer));
+	cmd_write_t const *reader = pgm_read_ptr_near(&(cmd->action.read));
+
+	if (reader == NULL) {
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" is not readable"), name);
+		return false;
+	}	
+	if (printer == NULL) {
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" is readable via Modbus only!"), name);
+		return false;
+	}
+
+	// Output variable name. Ensure space for an equals sign.
+	serial_out += strlcpy(serial_out, name, SERIAL_TX_END - serial_out);
+	if (serial_out+1 >= SERIAL_TX_END) goto serial_full;
+	*serial_out++ = '=';
+	
+	// Collect the data first to the serial buffer. No NUL byte
+	// required in the end, therefore using > instead of >= in
+	// comparison.
+	buflen_t wrote_modbus = reader(serial_out, SERIAL_TX_END - serial_out);
+	if (serial_out + wrote_modbus > SERIAL_TX_END) goto serial_full;
+
+	// Populate output buffer with final content. Overwriting the
+	// content already in the buffer.
+	buflen_t wrote = printer(serial_out, SERIAL_TX_END - serial_out);
+
+	// Ensure the content is fitted. Ensure space for NUL or space byte.
+	serial_out += wrote;
+	if (serial_out+1 >= SERIAL_TX_END) goto serial_full;
+
+	if (buf == NULL) {
+		// It's the last, we succeeded. NUL terminating the
+		// result string.
+		*serial_out = '\0';
+		return true;
+	} else {
+		// Otherwise doing a tail recursion until we run out
+		// of input data.
+		*serial_out++ = ' ';
+		return process_read(buf, serial_out);
+	}
+	
+ serial_full:
+	snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Serial buffer too short for \"%s\""), name);
+	return false;
 }
 
+// Process write requests. Outputs error messages or "OK".
 static bool process_write(char *buf)
 {
 	// Finding the name from the lookup table
-	char *const name = strsep(&buf, "=");
-	cmd_ascii_t *cmd = find_cmd(name);
+	char const *const name = strsep(&buf, "=");
+	cmd_ascii_t const *const cmd = find_cmd(name);
 
 	if (cmd == NULL) {
 		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Unknown field: \"%s\""), name);
@@ -101,7 +158,7 @@ static bool process_write(char *buf)
 }
 
 // Search given command from the table generated to cmd.c
-static cmd_ascii_t *find_cmd(char const *const name)
+static cmd_ascii_t const *find_cmd(char const *const name)
 {
 	if (name == NULL) return NULL;
 	// Doing binary search over items.
@@ -119,6 +176,8 @@ static int cmd_comparator(const void *key_void, const void *item_void)
 	return strcasecmp_P(key, item_name);
 }
 
+// Entry point to this object. Processes given input in ASCII and
+// performs the operations in there.
 bool interface_ascii(char *buf, buflen_t len)
 {
 	// Handle corner cases: incorrect line ending or empty
@@ -132,7 +191,7 @@ bool interface_ascii(char *buf, buflen_t len)
 	char *const op = strsep(&buf, " ");
 	if (buf != NULL) {
 		if (strcasecmp_P(op, PSTR("read")) == 0) {
-			return process_read(buf);
+			return process_read(buf, serial_tx);
 		}
 		if (strcasecmp_P(op, PSTR("write")) == 0) {
 			return process_write(buf);
