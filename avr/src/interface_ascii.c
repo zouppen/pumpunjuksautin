@@ -142,9 +142,11 @@ static bool process_write(char *buf)
 	
 	// OK, now it gets exciting. We have all the functions, so
 	// just doing the magic!
+	cmd_parse_error = PSTR("Unknown error");
 	bool ok = scanner(value, writer);
 	if (!ok) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" write failed"), name);
+		int pos = snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" write failed: "), name);
+		snprintf_P(serial_tx+pos, SERIAL_TX_LEN-pos, cmd_parse_error, cmd_parse_error_arg);
 		return false;
 	}
 
