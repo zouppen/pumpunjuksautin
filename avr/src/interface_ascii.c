@@ -196,14 +196,14 @@ bool interface_ascii(char *buf, buflen_t len)
 	// Operation type parsing
 	char *const op = strsep(&buf, " ");
 	if (buf != NULL) {
-		if (strcasecmp_P(op, PSTR("read")) == 0) {
+		if (strcasecmp_P(op, PSTR("get")) == 0) {
 			return process_read(buf, serial_tx);
 		}
-		if (strcasecmp_P(op, PSTR("write")) == 0) {
+		if (strcasecmp_P(op, PSTR("set")) == 0) {
 			return process_write(buf);
 		}
 	}
 
-	strcpy_P(serial_tx, PSTR("Unknown operation. Expecting READ or WRITE"));
+	strcpy_P(serial_tx, PSTR("Unknown operation. Expecting GET or SET"));
 	return false;
 }
