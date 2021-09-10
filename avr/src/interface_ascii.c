@@ -63,12 +63,12 @@ static bool process_read(char *buf, char *serial_out)
 	cmd_print_t const *printer = pgm_read_ptr_near(&(cmd->printer));
 	cmd_write_t const *reader = pgm_read_ptr_near(&(cmd->action.read));
 
-	if (reader == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" is not readable"), name);
-		return false;
-	}	
 	if (printer == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" is readable via Modbus only!"), name);
+		char const *msg = reader == NULL
+			? PSTR("Field \"%s\" is not readable")
+			: PSTR("Field \"%s\" is readable via Modbus only!");
+
+		snprintf_P(serial_tx, SERIAL_TX_LEN, msg, name);
 		return false;
 	}
 
@@ -80,8 +80,12 @@ static bool process_read(char *buf, char *serial_out)
 	// Collect the data first to the serial buffer. No NUL byte
 	// required in the end, therefore using > instead of >= in
 	// comparison.
-	buflen_t wrote_modbus = reader(serial_out, SERIAL_TX_END - serial_out);
-	if (serial_out + wrote_modbus > SERIAL_TX_END) goto serial_full;
+	if (reader != NULL) {
+		// Skipping this part if not using binary reader
+		// (command which has only ASCII implementation).
+		buflen_t wrote_modbus = reader(serial_out, SERIAL_TX_END - serial_out);
+		if (serial_out + wrote_modbus > SERIAL_TX_END) goto serial_full;
+	}
 
 	// Populate output buffer with final content. Overwriting the
 	// content already in the buffer.
@@ -124,12 +128,12 @@ static bool process_write(char *buf)
 	cmd_scan_t const *scanner = pgm_read_ptr_near(&(cmd->scanner));
 	cmd_write_t const *writer = pgm_read_ptr_near(&(cmd->action.write));
 
-	if (writer == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" is not writabled"), name);
-		return false;
-	}	
 	if (scanner == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" is writable via Modbus only!"), name);
+		char const *msg = writer == NULL
+			? PSTR("Field \"%s\" is not writable")
+			: PSTR("Field \"%s\" is writable via Modbus only!");
+
+		snprintf_P(serial_tx, SERIAL_TX_LEN, msg, name);
 		return false;
 	}
 

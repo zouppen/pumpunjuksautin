@@ -47,7 +47,6 @@ while read r_type r_address r_name r_read r_write r_printer r_scanner; do
     r_scanner="`pointerize "$r_scanner"`"
     
     # PROGMEM strings must be outside of array initialization
-    echo "static char const name_$r_name[] PROGMEM = \"$r_name\";"
     proto read "$r_read"
     proto write "$r_write"
     proto print "$r_printer"
@@ -55,8 +54,13 @@ while read r_type r_address r_name r_read r_write r_printer r_scanner; do
     
     # Produce lines for both ASCII interface and Modbus
     action="{ $r_read, $r_write }"
-    echo "	{ name_$r_name, $action, $r_printer, $r_scanner }," >&4
-    echo "	{`printf %2d  "$r_type"`, 0x`printf %04x "$r_address"`, $action }," >&5
+    if test "$r_name" != -; then
+	echo "static char const name_$r_name[] PROGMEM = \"$r_name\";"
+	echo "	{ name_$r_name, $action, $r_printer, $r_scanner }," >&4
+    fi
+    if test "$r_type" != -; then
+	echo "	{`printf %2d  "$r_type"`, 0x`printf %04x "$r_address"`, $action }," >&5
+    fi
 done
 
 # Prototypes. Only once per function.
