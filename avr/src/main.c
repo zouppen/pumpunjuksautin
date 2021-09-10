@@ -32,9 +32,6 @@
 #include "adc.h"
 #include "hardware_config.h"
 
-// Version definition is delivered by version.cmake
-extern char const version[] PROGMEM;
-
 // Store analog measurement sum and measurement count. Used for mean
 // calculation.
 typedef struct {

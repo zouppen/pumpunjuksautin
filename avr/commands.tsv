@@ -2,3 +2,4 @@ type	address	name	read	write	printer	scanner
 4	10	led	read_led	write_led	print_bool	scan_bool
 4	0	time	read_time	write_time	print_time	scan_many_int32
 4	2	gmtoff	read_gmtoff	write_time_zone	print_int32	scan_many_int32
+-	-	version	-	-	print_version	-

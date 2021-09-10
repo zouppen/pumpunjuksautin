@@ -51,6 +51,9 @@ char const *cmd_parse_error;
 uint32_t cmd_parse_error_arg;
 static buflen_t expected_count;
 
+// Version definition is delivered by version.cmake
+extern char const version[] PROGMEM;
+
 // Changes indicator LED status. Consumes 1 byte.
 buflen_t cmd_write_led(char const *const buf_in, buflen_t count)
 {
@@ -155,6 +158,12 @@ buflen_t cmd_print_bool(char *const buf_out, buflen_t count)
 	char val = *buf_out;
 	*buf_out = val ? '1' : '0';
 	return 1;
+}
+
+// Outputs version number. Doesn't use buffer for input.
+buflen_t cmd_print_version(char *const buf_out, buflen_t count)
+{
+	return strlcpy_P(buf_out, version, count);
 }
 
 // Reads current time to 2 16-bit registers
