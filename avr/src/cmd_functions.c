@@ -26,6 +26,12 @@
 
 #define OUT_OF_BUFFER (~0)
 
+// Using GCC builtins for byte order swaps
+// https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
+#define bswap_16(x) __builtin_bswap16(x)
+#define bswap_32(x) __builtin_bswap32(x)
+#define bswap_64(x) __builtin_bswap64(x)
+
 // Functions are used by external commands via Modbus or ASCII command
 // interface, defined in file avr/commands.tsv.
 //
@@ -92,17 +98,15 @@ buflen_t cmd_read_time(char *const buf_out, buflen_t count)
 	if (count < 4) return OUT_OF_BUFFER;
 
 	// Output time in big-endian byte order
-	uint32_t *dest = (uint32_t*)buf_out;
-	*dest = __builtin_bswap32(time(NULL));
+	*(uint32_t*)buf_out = bswap_32(time(NULL));
 	return 4;
 }
-
 
 // Writes current time. Consumes 2 16-bit registers
 buflen_t cmd_write_time(char const *const buf_in, buflen_t count)
 {
 	if (count < 4) return OUT_OF_BUFFER;
-	time_t now = __builtin_bswap32(*(uint32_t*)buf_in);
+	time_t now = bswap_32(*(uint32_t*)buf_in);
 	clock_set_time(now);
 	return 4;
 }
@@ -112,9 +116,9 @@ buflen_t cmd_write_time_zone(char const *const buf_in, buflen_t count) {
 	// Collect values
 	if (count < 12) return OUT_OF_BUFFER;
 
-	int32_t zone_now = __builtin_bswap32(*(int32_t*)buf_in); 
-	time_t ts_turn = __builtin_bswap32(*(uint32_t*)(buf_in + 4));
-	int32_t zone_turn = __builtin_bswap32(*(int32_t*)(buf_in + 8));
+	int32_t zone_now = bswap_32(*(int32_t*)buf_in); 
+	time_t ts_turn = bswap_32(*(uint32_t*)(buf_in + 4));
+	int32_t zone_turn = bswap_32(*(int32_t*)(buf_in + 8));
 
 	clock_set_zones(zone_now, ts_turn, zone_turn);
 	return 12;
@@ -125,7 +129,7 @@ buflen_t cmd_print_time(char *const buf_out, buflen_t count)
 {
 	if (count < 4) return OUT_OF_BUFFER;
 
-	time_t now = __builtin_bswap32(*(uint32_t*)buf_out);
+	time_t now = bswap_32(*(uint32_t*)buf_out);
 	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
 	return wrote ? wrote-1 : OUT_OF_BUFFER;
 }
