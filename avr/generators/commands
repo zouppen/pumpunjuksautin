@@ -6,17 +6,15 @@ sort_and_append() {
     sort "$1" | sed '$ s/,$//'
 }
 
-proto() {
-    # Produce C prototype for given function
-    test "$2" = NULL || echo "cmd_$1_t ${2#&};" >&3
-}
-
 pointerize() {
     # Prefix '&' if it's a function, otherwise NULL
-    if test "$1" = - -o "$1" = NULL; then
+    if test "$2" = - -o "$2" = NULL; then
 	echo -n NULL
     else
-	echo -n "&cmd_$1"
+	# Output the function name
+	echo -n "&cmd_$1_$2"
+	# Produce C prototype for given function, too
+	echo "cmd_$1_t cmd_$1_$2;" >&3
     fi
 }
 
@@ -40,22 +38,18 @@ EOF
 read foo
 
 while read r_type r_address r_name r_read r_write r_printer r_scanner; do
-    # Make functions pointers
-    r_read="`pointerize "$r_read"`"
-    r_write="`pointerize "$r_write"`"
-    r_printer="`pointerize "$r_printer"`"
-    r_scanner="`pointerize "$r_scanner"`"
-    
-    # PROGMEM strings must be outside of array initialization
-    proto read "$r_read"
-    proto write "$r_write"
-    proto print "$r_printer"
-    proto scan "$r_scanner"
-    
+    # Make functions pointers. Also, creates prototypes.
+    r_read="`pointerize read "$r_read"`"
+    r_write="`pointerize write "$r_write"`"
+    r_printer="`pointerize print "$r_printer"`"
+    r_scanner="`pointerize scan "$r_scanner"`"
+
     # Produce lines for both ASCII interface and Modbus
     action="{ $r_read, $r_write }"
     if test "$r_name" != -; then
+	# PROGMEM strings must be outside of array initialization
 	echo "static char const name_$r_name[] PROGMEM = \"$r_name\";"
+	# The actual array item
 	echo "	{ name_$r_name, $action, $r_printer, $r_scanner }," >&4
     fi
     if test "$r_type" != -; then

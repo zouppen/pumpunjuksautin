@@ -1,5 +1,5 @@
-type	address	name	read	write	printer	scanner
-4	10	led	read_led	write_led	print_bool	scan_bool
-4	0	time	read_time	write_time	print_time	scan_many_int32
-4	2	gmtoff	read_gmtoff	write_time_zone	print_int32	scan_many_int32
--	-	version	-	-	print_version	-
+type	address	name	cmd_read	cmd_write	cmd_print	cmd_scan
+4	10	led	led	led	bool	bool
+4	0	time	time	time	time	many_int32
+4	2	gmtoff	gmtoff	time_zone	int32	many_int32
+-	-	version	-	-	version	-
