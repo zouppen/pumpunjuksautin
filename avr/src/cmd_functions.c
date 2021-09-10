@@ -190,6 +190,26 @@ buflen_t cmd_write_time_zone(char const *const buf_in, buflen_t count)
 	return 12;
 }
 
+// Read currently observed UTC offset (time zone with DST adjustment,
+// if any)
+buflen_t cmd_read_gmtoff(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(4);
+
+	// Output time in big-endian byte order
+	*(int32_t*)buf_out = bswap_32(clock_get_gmtoff());
+	return 4;
+}
+
+// Prints 32-bit signed integer in decimal format
+buflen_t cmd_print_int32(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(4);
+
+	int32_t val = bswap_32(*(uint32_t*)buf_out);
+	return snprintf_P(buf_out, count, PSTR("%" PRId32), val);
+}
+
 // Formats big-endian time in ISO 8601 format with time zone
 buflen_t cmd_print_time(char *const buf_out, buflen_t count)
 {
