@@ -15,8 +15,9 @@ typedef buflen_t (cmd_write_t)(char const *const buf_in, buflen_t count);
 
 // Function which parses already tokenized (null terminated) text and
 // passes it to given write function. Returns true if the scanning
-// succeeded.
-typedef bool (cmd_scan_t)(char const *const buf_in, cmd_write_t *writer);
+// succeeded. Parameter buf_in is not const because further
+// tokenization might be needed in the function.
+typedef bool (cmd_scan_t)(char *buf_in, cmd_write_t *writer);
 
 // Function for textual output. It takes in the buffer where reader
 // has already written the values and it rewrites the contents to
