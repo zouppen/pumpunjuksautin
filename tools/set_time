@@ -50,19 +50,24 @@ for_bc () {
 
 # Get all information as bc formula
 get_all () {
-    extract_now | for_bc
     extract_dst | for_bc
+    extract_now | for_bc
+}
+
+serial_set () {
+    echo write time=$3 gmtoff=$4,$1,$2
 }
 
 # Actual serial port communications
 exec 3>&1
 {
-    echo -n "Old time: " >&3
-    echo TIME
+    echo -n "Old " >&3
+    echo read time
     sleep 0.2
-    echo TIME `get_all | bc`
+    echo -n "Setting time... " >&3
+    serial_set `get_all | bc`
     sleep 0.2
-    echo -n "New time: " >&3
-    echo TIME
+    echo -n "New " >&3
+    echo read time
     sleep 0.2
 } | socat - "$1,cfmakeraw,b${2-9600}"
