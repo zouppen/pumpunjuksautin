@@ -18,6 +18,9 @@
 #include <util/atomic.h>
 #include "clock.h"
 
+// avr_libc internal variable
+extern const long __utc_offset;
+
 static int unixy_dst(const time_t *time, int32_t *z);
 
 static volatile uint8_t counter_b = CLOCK_B;
@@ -146,4 +149,11 @@ static int unixy_dst(const time_t *time, int32_t *z)
 	bool const is_now_dst = before_turn ^ towards_summer;
 
 	return is_now_dst ? labs(clock_turn_offset) : 0;
+}
+
+int32_t clock_get_gmtoff()
+{
+	time_t now;
+	time(&now);
+	return __utc_offset + unixy_dst(&now, NULL);
 }

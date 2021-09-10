@@ -47,4 +47,8 @@ bool clock_is_set(void);
 // delay of prescaler * COUNT_A / F_CPU = 4ms.
 void clock_arm_timer(uint8_t timeout);
 
+// Get currently observed UTC offset (time zone with DST adjustment,
+// if any)
+int32_t clock_get_gmtoff(void);
+
 #endif // CMD_CLOCK_H_
