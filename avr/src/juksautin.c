@@ -96,7 +96,8 @@ uint8_t adc_channel_selection(void) {
 	store(&v_accu.juksautin, juksautus);
 
 	// Now the actual selection. We use cycle length of 16
-	uint8_t cycle = v_accu.juksautin.count & 0b1111;
+	static uint8_t cycle = 0;
+	cycle = (cycle+1) & 0b1111;
 	switch (cycle) {
 	case 0:
 		// Internal temperature measurement
