@@ -28,6 +28,16 @@
 #define MV_MULT 275
 #define MV_DIV 256
 
+// To ensure we have enough headroom in the 32 bit voltage sum field
+// we need to keep the value below this. Value of 1024 is substracted
+// to make space for another 10-bit sample = 2^10 in case the counter
+// is odd.
+static uint32_t const accu_mv_sum_max = ~(uint32_t)0 / MV_MULT - 1024;
+
+// The same as in above but with scaling to 2^16 = 65536. And space for
+// another "1-bit sample" = 2^1 = 2.
+static uint32_t const accu_bool_sum_max = 65534;
+
 // Store analog measurement sum and measurement count. Used for mean
 // calculation.
 typedef struct {
@@ -50,7 +60,7 @@ static void handle_juksautus(uint16_t val);
 static void handle_int_temp(uint16_t val);
 static void handle_outside_temp(uint16_t val);
 static void handle_err(uint16_t val);
-static void store(volatile accu_t *a, uint16_t val);
+static void store(volatile accu_t *a, uint16_t const val, uint32_t const max);
 
 // Static values
 static volatile accus_t v_accu; // Holds all volatile measurement data
@@ -102,7 +112,7 @@ uint8_t adc_channel_selection(void) {
 	// thermistor value while juksautus is happening. We calculate
 	// juksautus count by counting the periods of time the current
 	// is flowing.
-	store(&v_accu.juksautin, juksautus);
+	store(&v_accu.juksautin, juksautus, accu_bool_sum_max);
 
 	// Now the actual selection. We use cycle length of 16
 	static uint8_t cycle = 0;
@@ -137,17 +147,17 @@ static void handle_juksautus(uint16_t val)
 	}
 
 	// Store measurement
-	store(&v_accu.k9_raw, val);
+	store(&v_accu.k9_raw, val, accu_mv_sum_max);
 }
 
 static void handle_int_temp(uint16_t val)
 {
-	store(&v_accu.int_temp, val);
+	store(&v_accu.int_temp, val, accu_mv_sum_max);
 }
 
 static void handle_outside_temp(uint16_t val)
 {
-	store(&v_accu.outside_temp, val);
+	store(&v_accu.outside_temp, val, accu_mv_sum_max);
 }
 
 static void handle_err(uint16_t val)
@@ -156,10 +166,24 @@ static void handle_err(uint16_t val)
 	v_accu.err = val;
 }
 
-// Update cumulative analog value for access outside the ISR. Do not let it overflow.
-static void store(volatile accu_t *a, uint16_t val) {
-	// Stop storing when full
-	if (a->count == ~0) return;
+// Update cumulative analog value for access outside the ISR.
+static void store(volatile accu_t *a, uint16_t const val, uint32_t const max)
+{
 	a->sum += val;
 	a->count++;
+	// Handle overflows in both divident and divisor
+	if (a->count == 0) {
+		// When we run out of headroom in counter, throw the
+		// least significant bits away.
+		a->sum >>= 1;
+		a->count = 1 << 15;
+	} else if ((a->count & 1) == 0 && a->sum > max) {
+		// When the sum has higher value than the millivolt
+		// conversion can handle AND the count is even, let's
+		// throw throw least significant bits away to get some
+		// more headroom. This happens about once per minute
+		// if there are no calls to take_accu().
+		a->sum >>= 1;
+		a->count >>= 1;
+	}
 }
