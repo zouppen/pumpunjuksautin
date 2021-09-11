@@ -23,7 +23,10 @@
 #include "juksautin.h"
 #include "hardware_config.h"
 
-#define VOLT (1.1f / 1024) // 1.1V AREF and 10-bit accuracy
+// With 1.1V AREF and 10-bit accuracy the conversion from samples to
+// millivolts is 1100 / 1024 = 275 / 256.
+#define MV_MULT 275
+#define MV_DIV 256
 
 // Store analog measurement sum and measurement count. Used for mean
 // calculation.
@@ -60,12 +63,12 @@ void juksautin_init(void)
 	adc_set_handler(8, handle_int_temp);
 	adc_set_handler(3, handle_outside_temp);
 	adc_set_handler(2, handle_err);
-	juksautin_set_k9_voltage(1);
+	juksautin_set_k9_target(1000);
 }
 
-void juksautin_set_k9_voltage(float u)
+void juksautin_set_k9_target(uint16_t const mv)
 {
-	uint16_t new_target = u / 1.1 * 1024;
+	uint16_t new_target = (uint32_t)mv * MV_DIV / MV_MULT;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		target = new_target;
 	}
