@@ -38,7 +38,7 @@ typedef struct {
 	accu_t int_temp;      // AVR internal temperature
 	accu_t outside_temp;  // Outside thermistor temp
 	accu_t juksautin;     // Juksautin ratio
-	accu_t err;           // Error led ratio
+	int16_t err;          // Error led high value
 } accus_t;
 
 // Static prototypes
@@ -139,7 +139,8 @@ static void handle_outside_temp(uint16_t val)
 
 static void handle_err(uint16_t val)
 {
-	store(&v_accu.err, val);
+	if (v_accu.err >= val) return;
+	v_accu.err = val;
 }
 
 // Update cumulative analog value for access outside the ISR. Do not let it overflow.
