@@ -55,6 +55,8 @@ typedef struct {
 } accus_t;
 
 // Static prototypes
+static uint16_t to_millivolts(accu_t a);
+static uint16_t to_ratio16(accu_t a);
 static accu_t take_accu(volatile accu_t *p);
 static void handle_juksautus(uint16_t val);
 static void handle_int_temp(uint16_t val);
@@ -90,6 +92,14 @@ float juksautin_compute_k9_real_voltage(float mv, float ratio, float um, float r
 	return 1 / (((um / mv - 1) / rm) - (ratio / 200));
 }
 
+uint16_t juksautin_get_k9_raw_mv(void) {
+	return to_millivolts(take_accu(&v_accu.k9_raw));
+}
+
+uint16_t juksautin_get_ratio(void) {
+	return to_ratio16(take_accu(&v_accu.juksautin));
+}
+
 // Take (read and empty) analog accumulator.
 static accu_t take_accu(volatile accu_t *p)
 {
@@ -102,6 +112,19 @@ static accu_t take_accu(volatile accu_t *p)
 		a.count = 0;
 	}
 	return a;
+}
+
+// Convert accumulator value to arithmetic mean millivolts.
+static uint16_t to_millivolts(accu_t a)
+{
+	return a.sum * MV_MULT / a.count / MV_DIV;
+}
+
+// Convert accumulator value to ratio scaled up to full scale of 16
+// bit unsigned integer.
+static uint16_t to_ratio16(accu_t a)
+{
+	return (a.sum << 16) / a.count;
 }
 
 // Defined in adc.h
