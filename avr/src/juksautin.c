@@ -67,6 +67,8 @@ static void store(volatile accu_t *a, uint16_t const val, uint32_t const max);
 // Static values
 static volatile accus_t v_accu; // Holds all volatile measurement data
 static volatile uint16_t target; // Target voltage for juksautus
+
+// Not volatile because used only inside ISRs
 static bool juksautus = false; // Is juksautus on at the moment?
 
 void juksautin_init(void)
