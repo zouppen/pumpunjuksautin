@@ -45,7 +45,7 @@ typedef struct {
 } accus_t;
 
 // Static prototypes
-static float accu_mean(accu_t *a);
+static accu_t take_accu(volatile accu_t *p);
 static void handle_juksautus(uint16_t val);
 static void handle_int_temp(uint16_t val);
 static void handle_outside_temp(uint16_t val);
@@ -80,9 +80,18 @@ float juksautin_compute_k9_real_voltage(float mv, float ratio, float um, float r
 	return 1 / (((um / mv - 1) / rm) - (ratio / 200));
 }
 
-// Take analog accumulator mean value
-static float accu_mean(accu_t *a) {
-	return (float)a->sum / a->count;
+// Take (read and empty) analog accumulator.
+static accu_t take_accu(volatile accu_t *p)
+{
+	accu_t a;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		// Copy and empty it atomically first before heavy
+		// floating point arithmetic.
+		a = *p;
+		a.sum = 0;
+		a.count = 0;
+	}
+	return a;
 }
 
 // Defined in adc.h
