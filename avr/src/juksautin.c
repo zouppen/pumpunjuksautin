@@ -108,7 +108,8 @@ uint16_t juksautin_take_k5_raw_mv(void)
 	return to_millivolts(take_accu(&v_accu.k5_raw));
 }
 
-uint16_t juksautin_get_ratio(void) {
+uint16_t juksautin_take_ratio(void)
+{
 	return to_ratio16(take_accu(&v_accu.juksautin));
 }
 

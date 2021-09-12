@@ -1,7 +1,8 @@
 #ifndef CMD_JUKSAUTIN_H_
 #define CMD_JUKSAUTIN_H_
 
-// Functions specific to Pumpunjuksautin
+// Functions specific to Pumpunjuksautin. NB! Functions with _take_ in
+// the name read and empty the internal average counter.
 
 // Initialize Juksautin ADC handlers and start with juksautus off
 // (target voltage 1.0V).
@@ -25,6 +26,6 @@ float juksautin_compute_k5_normal_voltage(float mv, float ratio, float um, float
 uint16_t juksautin_take_k5_raw_mv(void);
 
 // Get juksautin duty cycle in range 0-65535.
-uint16_t juksautin_get_ratio(void);
+uint16_t juksautin_take_ratio(void);
 
 #endif // CMD_JUKSAUTIN_H_
