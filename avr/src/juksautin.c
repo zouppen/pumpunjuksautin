@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <avr/eeprom.h>
 #include <util/atomic.h>
 #include "adc.h"
 #include "pin.h"
@@ -69,6 +70,7 @@ static void store(volatile accu_t *a, uint16_t const val, uint32_t const max);
 // Static values
 static volatile accus_t v_accu; // Holds all volatile measurement data
 static volatile uint16_t target; // Target voltage for juksautus
+static uint16_t ee_target EEMEM = 1000l * MV_DIV / MV_MULT; // EEPROM initial value is 1 V
 
 // Not volatile because used only inside ISRs
 static bool juksautus = false; // Is juksautus on at the moment?
@@ -80,7 +82,9 @@ void juksautin_init(void)
 	adc_set_handler(3, handle_outside_temp);
 	adc_set_handler(4, handle_accumulator_temp);
 	adc_set_handler(2, handle_err);
-	juksautin_set_target(1000);
+
+	// Retrieve target from EEPROM
+	target = eeprom_read_word(&ee_target);
 }
 
 void juksautin_set_target(uint16_t const mv)
@@ -89,6 +93,7 @@ void juksautin_set_target(uint16_t const mv)
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		target = new_target;
 	}
+	eeprom_update_word(&ee_target, new_target);
 }
 
 uint16_t juksautin_get_target(void)
