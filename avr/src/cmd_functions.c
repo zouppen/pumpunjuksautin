@@ -21,6 +21,7 @@
 #include <string.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 #include "cmd.h"
 #include "pin.h"
 #include "hardware_config.h"
@@ -300,17 +301,37 @@ buflen_t cmd_write_time(char const *const buf_in, buflen_t count)
 	return 4;
 }
 
-// Writes time zone information.
-buflen_t cmd_write_time_zone(char const *const buf_in, buflen_t count)
+// Writes current time zone
+buflen_t cmd_write_gmtoff(char const *const buf_in, buflen_t count)
 {
-	ENSURE_COUNT(12);
+	ENSURE_COUNT(4);
 
-	int32_t zone_now = bswap_32(*(int32_t*)buf_in); 
-	time_t ts_turn = bswap_32(*(uint32_t*)(buf_in + 4));
-	int32_t zone_turn = bswap_32(*(int32_t*)(buf_in + 8));
+	uint32_t a = bswap_32(*(uint32_t*)buf_in);
+	eeprom_update_dword(&clock_ee_zone_now, a);
+	clock_set_zones_from_eeprom();
+	return 4;
+}
 
-	clock_set_zones(zone_now, ts_turn, zone_turn);
-	return 12;
+// Writes next clock turn timestamp
+buflen_t cmd_write_next_turn(char const *const buf_in, buflen_t count)
+{
+	ENSURE_COUNT(4);
+
+	uint32_t a = bswap_32(*(uint32_t*)buf_in);
+	eeprom_update_dword(&clock_ee_ts_turn, a);
+	clock_set_zones_from_eeprom();
+	return 4;
+}
+
+// Writes gmtoff after next clock turn.
+buflen_t cmd_write_gmtoff_turn(char const *const buf_in, buflen_t count)
+{
+	ENSURE_COUNT(4);
+
+	uint32_t a = bswap_32(*(uint32_t*)buf_in);
+	eeprom_update_dword(&clock_ee_zone_turn, a);
+	clock_set_zones_from_eeprom();
+	return 4;
 }
 
 // Read currently observed UTC offset (time zone with DST adjustment,
@@ -321,6 +342,26 @@ buflen_t cmd_read_gmtoff(char *const buf_out, buflen_t count)
 
 	// Output time in big-endian byte order
 	*(int32_t*)buf_out = bswap_32(clock_get_gmtoff());
+	return 4;
+}
+
+// Read next clock turn timestamp
+buflen_t cmd_read_next_turn(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(4);
+
+	// Output time in big-endian byte order
+	*(int32_t*)buf_out = bswap_32(eeprom_read_dword(&clock_ee_ts_turn));
+	return 4;
+}
+
+// Read next clock turn timestamp
+buflen_t cmd_read_gmtoff_turn(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(4);
+
+	// Output time in big-endian byte order
+	*(int32_t*)buf_out = bswap_32(eeprom_read_dword(&clock_ee_zone_turn));
 	return 4;
 }
 

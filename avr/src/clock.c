@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <util/atomic.h>
+#include <avr/eeprom.h>
 #include "clock.h"
 
 // avr_libc internal variable
@@ -27,8 +28,15 @@ static volatile uint8_t counter_b = CLOCK_B;
 static bool is_set = false;
 
 // DST changes data (avr = AVR epoch, not UNIX)
-static time_t clock_turn_avr = 0;
-static int32_t clock_turn_offset = 0;
+static time_t clock_turn_avr;
+static int32_t clock_turn_offset;
+
+// Configuration in EEPROM. These are uints for compatibility. In
+// practice zone variables are signed, but that's taken care in
+// clock_set_zones_from_eeprom()
+uint32_t clock_ee_zone_now EEMEM = 0;
+uint32_t clock_ee_ts_turn EEMEM = 0;
+uint32_t clock_ee_zone_turn EEMEM = 0;
 
 void clock_init(void)
 {
@@ -60,6 +68,9 @@ void clock_init(void)
 #error Prescaler must be one of: 1, 8, 32, 64, 128, 256, 1024.
 #endif
 
+	// Read current timezone data from EEPROM
+	clock_set_zones_from_eeprom();
+
 	// Use our own function for summer time math
 	set_dst(unixy_dst);
 }
@@ -79,8 +90,13 @@ void clock_set_time(time_t const ts_now)
 	}
 }
 
-void clock_set_zones(int32_t const zone_now, time_t const ts_turn, int32_t const zone_turn)
+void clock_set_zones_from_eeprom(void)
 {
+	// Collect data from persistent memory
+	int32_t const zone_now = eeprom_read_dword(&clock_ee_zone_now);
+	time_t const ts_turn = eeprom_read_dword(&clock_ee_ts_turn);
+	int32_t const zone_turn = eeprom_read_dword(&clock_ee_zone_turn);
+
 	// DST structure in UNIX and AVR-libc are different. Unix uses
 	// time zone offset directly but avr-libc thinks traditionally
 	// by using "base zone" and supports positive DST offsets

@@ -1,7 +1,9 @@
 type	address	name	cmd_read	cmd_write	cmd_print	cmd_scan
 4	10	led	led	led	bool	bool
 4	0	time	time	time	time	many_int32
-4	2	gmtoff	gmtoff	time_zone	int32	many_int32
+4	2	gmtoff	gmtoff	gmtoff	int32	many_int32
+4	4	next_turn	next_turn	next_turn	time	many_int32
+4	6	gmtoff_turn	gmtoff_turn	gmtoff_turn	int32	many_int32
 4	8	target	target	target	int16	many_int16
 4	10	k5_raw	k5_raw	-	int16	-
 4	12	accu	accu	-	int16	-

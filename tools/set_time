@@ -55,7 +55,7 @@ get_all () {
 }
 
 serial_set () {
-    echo set time=$3 gmtoff=$4,$1,$2
+    echo set time=$3 gmtoff=$4 next_turn=$1 gmtoff_turn=$2
 }
 
 # Actual serial port communications
