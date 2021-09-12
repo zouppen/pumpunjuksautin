@@ -88,6 +88,15 @@ void juksautin_set_target(uint16_t const mv)
 	}
 }
 
+uint16_t juksautin_get_target(void)
+{
+	uint32_t raw;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		raw = target;
+	}
+	return raw * MV_MULT / MV_DIV;
+}
+
 float juksautin_compute_k5_real_voltage(float mv, float ratio, float um, float rm)
 {
 	// See control.md

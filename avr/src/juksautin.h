@@ -12,6 +12,9 @@ void juksautin_init(void);
 // the measured temperature higher (NTC thermistor)
 void juksautin_set_target(uint16_t mv);
 
+// Get previously set target voltage of K5 line in millivolts.
+uint16_t juksautin_get_target(void);
+
 // Calculate voltage in K5 line as if no juksautus was active. It is
 // calculated from the measured voltage mv, juksautus ratio, thermal
 // pump controller reference voltage um, and pull-up resistor
