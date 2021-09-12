@@ -286,7 +286,7 @@ buflen_t cmd_read_time(char *const buf_out, buflen_t count)
 	ENSURE_COUNT(4);
 
 	// Output time in big-endian byte order
-	*(uint32_t*)buf_out = bswap_32(time(NULL));
+	*(uint32_t*)buf_out = bswap_32(time(NULL) + UNIX_OFFSET);
 	return 4;
 }
 
@@ -347,7 +347,7 @@ buflen_t cmd_print_time(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	time_t now = bswap_32(*(uint32_t*)buf_out);
+	time_t now = bswap_32(*(uint32_t*)buf_out) - UNIX_OFFSET;
 	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
 	return wrote ? wrote-1 : OUT_OF_BUFFER;
 }
