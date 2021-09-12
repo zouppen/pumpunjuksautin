@@ -48,10 +48,10 @@ typedef struct {
 // Struct of accumulators
 typedef struct {
 	accu_t k5_raw;           // Real voltage in K5
-	accu_t int_temp;      // AVR internal temperature
-	accu_t outside_temp;  // Outside thermistor temp
-	accu_t juksautin;     // Juksautin ratio
-	int16_t err;          // Error led high value
+	accu_t int_temp;         // AVR internal temperature
+	accu_t outside_temp;     // Outside thermistor temp
+	accu_t juksautin;        // Juksautin ratio
+	int16_t err;             // Error led high value
 } accus_t;
 
 // Static prototypes
@@ -118,8 +118,7 @@ static accu_t take_accu(volatile accu_t *p)
 {
 	accu_t a;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		// Copy and empty it atomically first before heavy
-		// floating point arithmetic.
+		// Copy and empty it atomically.
 		a = *p;
 		a.sum = 0;
 		a.count = 0;
@@ -141,7 +140,8 @@ static uint16_t to_ratio16(accu_t a)
 }
 
 // Defined in adc.h
-uint8_t adc_channel_selection(void) {
+uint8_t adc_channel_selection(void)
+{
 	// Since this is called every ADC measurement, it's a good
 	// place to record the ratio of pulldowns and total
 	// measurements. That allows us to calculate the real
