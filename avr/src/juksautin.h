@@ -28,4 +28,7 @@ uint16_t juksautin_take_k5_raw_mv(void);
 // Get juksautin duty cycle in range 0-65535.
 uint16_t juksautin_take_ratio(void);
 
+// Get accumulator tank temperature
+uint16_t juksautin_take_accumulator_temp(void);
+
 #endif // CMD_JUKSAUTIN_H_

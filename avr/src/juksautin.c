@@ -50,6 +50,7 @@ typedef struct {
 	accu_t k5_raw;           // Real voltage in K5
 	accu_t int_temp;         // AVR internal temperature
 	accu_t outside_temp;     // Outside thermistor temp
+	accu_t accumulator_temp; // Accumulator tank thermistor temp
 	accu_t juksautin;        // Juksautin ratio
 	int16_t err;             // Error led high value
 } accus_t;
@@ -61,6 +62,7 @@ static accu_t take_accu(volatile accu_t *p);
 static void handle_juksautus(uint16_t val);
 static void handle_int_temp(uint16_t val);
 static void handle_outside_temp(uint16_t val);
+static void handle_accumulator_temp(uint16_t val);
 static void handle_err(uint16_t val);
 static void store(volatile accu_t *a, uint16_t const val, uint32_t const max);
 
@@ -76,6 +78,7 @@ void juksautin_init(void)
 	adc_set_handler(0, handle_juksautus);
 	adc_set_handler(8, handle_int_temp);
 	adc_set_handler(3, handle_outside_temp);
+	adc_set_handler(4, handle_accumulator_temp);
 	adc_set_handler(2, handle_err);
 	juksautin_set_target(1000);
 }
@@ -111,6 +114,11 @@ uint16_t juksautin_take_k5_raw_mv(void)
 uint16_t juksautin_take_ratio(void)
 {
 	return to_ratio16(take_accu(&v_accu.juksautin));
+}
+
+uint16_t juksautin_take_accumulator_temp(void)
+{
+	return to_millivolts(take_accu(&v_accu.accumulator_temp));
 }
 
 // Take (read and empty) analog accumulator.
@@ -163,6 +171,9 @@ uint8_t adc_channel_selection(void)
 	case 8:
 		// Outside temperature measurement
 		return 3;
+	case 12:
+		// Tank temperature measurement
+		return 4;
 	default:
 		// NTC thermistor measurement
 		return 0;
@@ -194,6 +205,11 @@ static void handle_int_temp(uint16_t val)
 static void handle_outside_temp(uint16_t val)
 {
 	store(&v_accu.outside_temp, val, accu_mv_sum_max);
+}
+
+static void handle_accumulator_temp(uint16_t val)
+{
+	store(&v_accu.accumulator_temp, val, accu_mv_sum_max);
 }
 
 static void handle_err(uint16_t val)
