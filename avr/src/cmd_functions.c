@@ -240,6 +240,36 @@ buflen_t cmd_write_target(char const *const buf_in, buflen_t count)
 	return 2;
 }
 
+// Reads K5 thermistor voltage in mV to 1 16-bit register
+buflen_t cmd_read_k5_raw(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(2);
+
+	// Output time in big-endian byte order
+	*(uint16_t*)buf_out = bswap_16(juksautin_take_k5_raw_mv());
+	return 2;
+}
+
+// Reads accumulator tank temperature to 1 16-bit register
+buflen_t cmd_read_accu(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(2);
+
+	// Output time in big-endian byte order
+	*(uint16_t*)buf_out = bswap_16(juksautin_take_accumulator_temp());
+	return 2;
+}
+
+// Reads outside temperature to 1 16-bit register
+buflen_t cmd_read_out(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(2);
+
+	// Output time in big-endian byte order
+	*(uint16_t*)buf_out = bswap_16(juksautin_take_outside_temp());
+	return 2;
+}
+
 // Reads error LED status to 1 16-bit register
 buflen_t cmd_read_error(char *const buf_out, buflen_t count)
 {
