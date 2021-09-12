@@ -3,5 +3,5 @@
 
 ((c-mode
   (c-file-style . "linux")
-  (compile-command . "make -kC ../build upload")
+  (compile-command . "make -kC ../build")
 ))
