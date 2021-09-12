@@ -97,6 +97,59 @@ bool cmd_scan_bool(char const *const buf_in, cmd_write_t *writer)
 	return writer(&truth, 1) == 1;
 }
 
+// Scans input for multiple comma separated 16-bit integers,
+// signed or unsigned. Maximum number of values is 8.
+bool cmd_scan_many_int16(char *const buf_orig, cmd_write_t *writer)
+{
+	char *buf_in = buf_orig;
+	const int maxlen = 8;
+	int16_t tmp_buf[maxlen];
+	uint8_t i;
+	for (i=0; buf_in != NULL; i++) {
+		if (i == maxlen) {
+			cmd_parse_error = PSTR("Too long integer array");
+			return false;
+		}
+
+		// Parse item and scan
+		const char *s = strsep(&buf_in, ",");
+		int read = 0;
+		int16_t val;
+		int items = sscanf_P(s, PSTR("%" SCNi16 "%n"), &val, &read);
+		if (items != 1 || s[read] != '\0') {
+			cmd_parse_error = PSTR("Value at %d is not a digit");
+			// Calculate the position after the = sign
+			cmd_parse_error_arg = s - buf_orig + read;
+			return false;
+		}
+
+		// Store value
+		tmp_buf[i] = bswap_16(val);
+	}
+
+	// Pass it on to Modbus handler.
+	buflen_t wrote = writer((char*)tmp_buf, sizeof(int16_t)*i);
+	if (wrote == sizeof(int16_t)*i) {
+		return true;
+	}
+
+	// Nice errors are being generated
+	if (expected_count == sizeof(int16_t)) {
+		cmd_parse_error = PSTR("Expected number, not an array");
+	} else {
+		// Convert to items for nice error messages
+		div_t a = div(expected_count, sizeof(int16_t));
+		if (a.rem) {
+			cmd_parse_error = PSTR("Alignment error. %d octets wanted");
+			cmd_parse_error_arg = expected_count;
+		} else {
+			cmd_parse_error = PSTR("Array of %d items expected");
+			cmd_parse_error_arg = a.quot;
+		}
+	}
+	return false;
+}
+
 // Scans input for multiple comma separated 32-bit integers,
 // signed or unsigned. Maximum number of values is 8.
 bool cmd_scan_many_int32(char *const buf_orig, cmd_write_t *writer)
@@ -208,6 +261,15 @@ buflen_t cmd_read_gmtoff(char *const buf_out, buflen_t count)
 	// Output time in big-endian byte order
 	*(int32_t*)buf_out = bswap_32(clock_get_gmtoff());
 	return 4;
+}
+
+// Prints 16-bit signed integer in decimal format
+buflen_t cmd_print_int16(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(2);
+
+	int32_t val = bswap_16(*(uint16_t*)buf_out);
+	return snprintf_P(buf_out, count, PSTR("%" PRId16), val);
 }
 
 // Prints 32-bit signed integer in decimal format
