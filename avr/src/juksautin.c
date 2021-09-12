@@ -47,7 +47,7 @@ typedef struct {
 
 // Struct of accumulators
 typedef struct {
-	accu_t k9_raw;        // Real voltage in K9
+	accu_t k5_raw;           // Real voltage in K5
 	accu_t int_temp;      // AVR internal temperature
 	accu_t outside_temp;  // Outside thermistor temp
 	accu_t juksautin;     // Juksautin ratio
@@ -77,10 +77,10 @@ void juksautin_init(void)
 	adc_set_handler(8, handle_int_temp);
 	adc_set_handler(3, handle_outside_temp);
 	adc_set_handler(2, handle_err);
-	juksautin_set_k9_target(1000);
+	juksautin_set_target(1000);
 }
 
-void juksautin_set_k9_target(uint16_t const mv)
+void juksautin_set_target(uint16_t const mv)
 {
 	uint16_t new_target = (uint32_t)mv * MV_DIV / MV_MULT;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -88,14 +88,15 @@ void juksautin_set_k9_target(uint16_t const mv)
 	}
 }
 
-float juksautin_compute_k9_real_voltage(float mv, float ratio, float um, float rm)
+float juksautin_compute_k5_real_voltage(float mv, float ratio, float um, float rm)
 {
 	// See control.md
 	return 1 / (((um / mv - 1) / rm) - (ratio / 200));
 }
 
-uint16_t juksautin_get_k9_raw_mv(void) {
-	return to_millivolts(take_accu(&v_accu.k9_raw));
+uint16_t juksautin_take_k5_raw_mv(void)
+{
+	return to_millivolts(take_accu(&v_accu.k5_raw));
 }
 
 uint16_t juksautin_get_ratio(void) {
@@ -172,7 +173,7 @@ static void handle_juksautus(uint16_t val)
 	}
 
 	// Store measurement
-	store(&v_accu.k9_raw, val, accu_mv_sum_max);
+	store(&v_accu.k5_raw, val, accu_mv_sum_max);
 }
 
 static void handle_int_temp(uint16_t val)
