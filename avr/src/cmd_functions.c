@@ -25,6 +25,7 @@
 #include "pin.h"
 #include "hardware_config.h"
 #include "clock.h"
+#include "juksautin.h"
 
 #define OUT_OF_BUFFER (~0)
 
@@ -217,6 +218,36 @@ buflen_t cmd_print_bool(char *const buf_out, buflen_t count)
 buflen_t cmd_print_version(char *const buf_out, buflen_t count)
 {
 	return strlcpy_P(buf_out, version, count);
+}
+
+// Reads current juksautus target to 1 16-bit register
+buflen_t cmd_read_target(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(2);
+
+	// Output time in big-endian byte order
+	*(uint16_t*)buf_out = bswap_16(juksautin_get_target());
+	return 2;
+}
+
+// Writes juksautus target voltage. Consumes 1 16-bit register
+buflen_t cmd_write_target(char const *const buf_in, buflen_t count)
+{
+	ENSURE_COUNT(2);
+
+	uint16_t a = bswap_16(*(uint16_t*)buf_in);
+	juksautin_set_target(a);
+	return 2;
+}
+
+// Reads error LED status to 1 16-bit register
+buflen_t cmd_read_error(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(2);
+
+	// Output time in big-endian byte order
+	*(uint16_t*)buf_out = bswap_16(juksautin_take_error());
+	return 2;
 }
 
 // Reads current time to 2 16-bit registers
