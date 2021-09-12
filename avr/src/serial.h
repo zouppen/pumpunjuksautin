@@ -8,8 +8,8 @@
 
 // Serial buffer lengths. If you want to go beyond 255, remember to
 // change buflen_t from uint8_t to uint16_t.
-#define SERIAL_RX_LEN 50
-#define SERIAL_TX_LEN 90
+#define SERIAL_RX_LEN 80
+#define SERIAL_TX_LEN 80
 
 typedef uint8_t buflen_t;
 
