@@ -28,6 +28,12 @@ uint16_t juksautin_take_k5_raw_mv(void);
 // Get juksautin duty cycle in range 0-65535.
 uint16_t juksautin_take_ratio(void);
 
+// Get error LED high value. TODO: Should we return bool instead?
+uint16_t juksautin_take_error(void);
+
+// Get outside temperature
+uint16_t juksautin_take_outside_temp(void);
+
 // Get accumulator tank temperature
 uint16_t juksautin_take_accumulator_temp(void);
 

@@ -116,6 +116,22 @@ uint16_t juksautin_take_ratio(void)
 	return to_ratio16(take_accu(&v_accu.juksautin));
 }
 
+uint16_t juksautin_take_error(void)
+{
+	uint16_t error;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		// Copy and empty it atomically.
+		error = v_accu.err;
+		v_accu.err = 0;
+	}
+	return error;
+}
+
+uint16_t juksautin_take_outside_temp(void)
+{
+	return to_millivolts(take_accu(&v_accu.outside_temp));
+}
+
 uint16_t juksautin_take_accumulator_temp(void)
 {
 	return to_millivolts(take_accu(&v_accu.accumulator_temp));
