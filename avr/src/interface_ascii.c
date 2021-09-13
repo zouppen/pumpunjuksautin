@@ -32,6 +32,7 @@ static cmd_ascii_t const *find_cmd(char const *const name);
 static int cmd_comparator(const void *key_void, const void *item_void);
 static buflen_t serial_pad(buflen_t n);
 static void clean_errors(void);
+static void error_full(buflen_t parse_pos);
 
 // Replace line ending (LF or CRLF) from the message with NUL
 // character.
@@ -127,8 +128,34 @@ static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
 	}
 	
  serial_full:
-	snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Serial buffer too short for \"%s\""), name);
+	error_full(parse_pos);
 	return false;
+}
+
+static void error_full(buflen_t parse_pos)
+{
+	// String formatting is such a thing which is never easy to
+	// read. Not even trying to explain this. In case there are
+	// bugs found here, just rewrite this function.
+	const buflen_t pad = serial_pad(parse_pos);
+	int msg_len = 32;
+	int msg_pos = pad;
+	int tail = 0;
+	if (msg_pos + msg_len >= SERIAL_TX_LEN) {
+		// Put it before ^ sign
+		msg_pos = pad - 3 - msg_len;
+		if (msg_pos < 0) {
+			// If not enough, just print the message
+			msg_pos = 0;
+			if (msg_len >= SERIAL_TX_LEN) msg_len = SERIAL_TX_LEN-1;
+		} else {
+			tail = 2;
+		}
+	}
+
+	strncpy_P(serial_tx + msg_pos, PSTR("Serial buffer too short for this"), msg_len);
+	// Terminate string
+	serial_tx[msg_pos + msg_len + tail] = '\0';
 }
 
 static void clean_errors(void)
