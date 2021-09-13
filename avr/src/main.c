@@ -19,6 +19,8 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <ctype.h>
+#include <avr/pgmspace.h>
 #include <avr/sleep.h>
 #include <util/atomic.h>
 #include "adc.h"
@@ -75,15 +77,24 @@ void loop(void) {
 	static uint16_t i = ~0;
 	i++;
 
-	// Marker if any serial is written.
-	*serial_tx = '\0';
-
-	// Process the message
-	bool ok = interface_ascii(rx_buf, len);
-	serial_free_message();
-
-	// Send the answer if we have one
-	if (*serial_tx != '\0') {
-	    serial_tx_line();
+	const bool overflow = len > SERIAL_RX_LEN;
+	const bool is_ascii = isalpha(*rx_buf);
+	
+	if (overflow) {
+		serial_free_message();
+		// Message cut short. Answer to it only if it has ASCII content.
+		if (is_ascii) {
+			snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Incoming message longer than %d bytes"), SERIAL_RX_LEN);
+			serial_tx_line();
+		}
+	} else if (is_ascii) {
+		// Process ASCII message
+		interface_ascii(rx_buf, len);
+		serial_free_message();
+		serial_tx_line();
+	} else {
+		// Process Modbus message
+		// TODO Modbus parser. Meanwhile we stay silent.
+		serial_free_message();
 	}
 }

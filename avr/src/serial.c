@@ -159,30 +159,32 @@ static void end_of_frame(void)
 {
 	bool const overflow = serial_rx_i > SERIAL_RX_LEN;
 	bool locked = serial_rx_front != NULL;
-	if (overflow) {
-		// Too long frame is completely
-		// ignored. Rollback the buffer and prepare
-		// for a new frame.
-		counts.too_long_rx++;
-	} else if (locked) {
+	if (locked) {
 		// We need to throw a frame overboard
 		// because main loop didn't process
 		// front buffer in time.
 		counts.flip_timeout++;
+		goto rewind;
+	}
+	if (overflow) {
+		// Too long frame increments error counter. We still want to sometimes process the start of it
+		counts.too_long_rx++;
 	} else {
 		// Looks good, at least before CRC checks and so.
 		counts.good++;
-
-		// Collect length for later use
-		serial_rx_front_len = serial_rx_i;
-
-		// Flip buffers!
-		serial_rx_front = serial_rx_back;
-		serial_rx_back =
-			(serial_rx_a == serial_rx_back)
-			? serial_rx_b
-			: serial_rx_a;
 	}
+
+	// Collect length for later use. Length of ~0 marks an error.
+	serial_rx_front_len = serial_rx_i;
+
+	// Flip buffers!
+	serial_rx_front = serial_rx_back;
+	serial_rx_back =
+		(serial_rx_a == serial_rx_back)
+		? serial_rx_b
+		: serial_rx_a;
+
+rewind:
 	// Latest but not least: Rewind receive buffer
 	serial_rx_i = 0;
 }

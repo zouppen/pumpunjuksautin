@@ -29,9 +29,9 @@ void serial_init(void);
 // Is serial transmitter on?
 bool serial_is_transmitting(void);
 
-// Gets a message from serial receive buffer, if any.  The returned
+// Gets a message from serial receive buffer, if any. The returned
 // buffer is immutable. Buffer must be released after processing with
-// serial_free_message()
+// serial_free_message(). In case buffer overflow, returns ~0.
 buflen_t serial_get_message(char **const buf);
 
 // Release receive buffer. This is important to do as soon as
