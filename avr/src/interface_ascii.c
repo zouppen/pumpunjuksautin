@@ -73,7 +73,7 @@ static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
 
 	if (cmd == NULL) {
 		const buflen_t pad = serial_pad(parse_pos);
-		snprintf_P(serial_tx + pad, SERIAL_TX_LEN - pad, PSTR("Unknown field"));
+		strlcpy_P(serial_tx + pad, PSTR("Unknown field"), SERIAL_TX_LEN - pad);
 		return false;
 	}
 
@@ -87,7 +87,7 @@ static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
 			: PSTR("Readable via Modbus only!");
 
 		const buflen_t pad = serial_pad(parse_pos);
-		snprintf_P(serial_tx + pad, SERIAL_TX_LEN - pad, msg, name);
+		strlcpy_P(serial_tx + pad, msg, SERIAL_TX_LEN - pad);
 		return false;
 	}
 
