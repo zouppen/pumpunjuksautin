@@ -149,8 +149,8 @@ static accu_t take_accu(volatile accu_t *p)
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		// Copy and empty it atomically.
 		a = *p;
-		a.sum = 0;
-		a.count = 0;
+		p->sum = 0;
+		p->count = 0;
 	}
 	return a;
 }
