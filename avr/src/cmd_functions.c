@@ -324,7 +324,7 @@ buflen_t cmd_print_time(char *const buf_out, buflen_t count)
 
 	time_t now = *(uint32_t*)buf_out - UNIX_OFFSET;
 	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
-	return wrote ? wrote-1 : OUT_OF_BUFFER;
+	return wrote == 25 ? wrote-1 : OUT_OF_BUFFER;
 }
 
 // Just writes PONG. For testing
