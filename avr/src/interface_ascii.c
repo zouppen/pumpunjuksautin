@@ -26,10 +26,11 @@
 #define SERIAL_TX_END (serial_tx + SERIAL_TX_LEN)
 
 static bool strip_line_ending(char *buf, int const len);
-static bool process_read(char *buf, char *serial_out);
-static bool process_write(char *buf);
+static bool process_read(char *buf, char *serial_out, buflen_t parse_pos);
+static bool process_write(char *buf, buflen_t parse_pos);
 static cmd_ascii_t const *find_cmd(char const *const name);
 static int cmd_comparator(const void *key_void, const void *item_void);
+static buflen_t serial_pad(buflen_t n);
 static void clean_errors(void);
 
 // Replace line ending (LF or CRLF) from the message with NUL
@@ -48,15 +49,31 @@ static bool strip_line_ending(char *const buf, int const len)
 	return true;
 }
 
-// Process read requests, writing to serial buffer.
-static bool process_read(char *buf, char *serial_out)
+static buflen_t serial_pad(buflen_t n)
 {
+	if (n + 2 < SERIAL_TX_LEN) {
+		// Produce space padding
+		memset(serial_tx, ' ', n+2);
+		serial_tx[n] = '^';
+		return n+2;
+	} else {
+		// Otherwise just col position
+		return snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("At %d: "), n);
+	}
+}
+
+// Process read requests, writing to serial buffer.
+static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
+{
+	const char *const ref_p = buf - parse_pos;
+
 	// Collecting parameter name to read
 	char const *const name = strsep(&buf, " ");
 	cmd_ascii_t const *const cmd = find_cmd(name);
 
 	if (cmd == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Unknown field: \"%s\""), name);
+		const buflen_t pad = serial_pad(parse_pos);
+		snprintf_P(serial_tx + pad, SERIAL_TX_LEN - pad, PSTR("Unknown field"));
 		return false;
 	}
 
@@ -66,10 +83,11 @@ static bool process_read(char *buf, char *serial_out)
 
 	if (printer == NULL) {
 		char const *msg = reader == NULL
-			? PSTR("Field \"%s\" is not readable")
-			: PSTR("Field \"%s\" is readable via Modbus only!");
+			? PSTR("Not readable")
+			: PSTR("Readable via Modbus only!");
 
-		snprintf_P(serial_tx, SERIAL_TX_LEN, msg, name);
+		const buflen_t pad = serial_pad(parse_pos);
+		snprintf_P(serial_tx + pad, SERIAL_TX_LEN - pad, msg, name);
 		return false;
 	}
 
@@ -105,7 +123,7 @@ static bool process_read(char *buf, char *serial_out)
 		// Otherwise doing a tail recursion until we run out
 		// of input data.
 		*serial_out++ = ' ';
-		return process_read(buf, serial_out);
+		return process_read(buf, serial_out, buf-ref_p);
 	}
 	
  serial_full:
@@ -116,17 +134,21 @@ static bool process_read(char *buf, char *serial_out)
 static void clean_errors(void)
 {
 	cmd_parse_error = PSTR("Unknown error");
+	cmd_parse_error_pos = 0;
 }
 
 // Process write requests. Outputs error messages or "OK".
-static bool process_write(char *buf)
+static bool process_write(char *buf, buflen_t parse_pos)
 {
+	const char *const ref_p = buf - parse_pos;
+
 	// Finding the name from the lookup table
 	char const *const name = strsep(&buf, "=");
 	cmd_ascii_t const *const cmd = find_cmd(name);
 
 	if (cmd == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Unknown field: \"%s\""), name);
+		const buflen_t pad = serial_pad(parse_pos);
+		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, PSTR("Unknown field"));
 		return false;
 	}
 
@@ -136,27 +158,30 @@ static bool process_write(char *buf)
 
 	if (scanner == NULL) {
 		char const *msg = writer == NULL
-			? PSTR("Field \"%s\" is not writable")
-			: PSTR("Field \"%s\" is writable via Modbus only!");
+			? PSTR("Not writable")
+			: PSTR("Writable via Modbus only!");
 
-		snprintf_P(serial_tx, SERIAL_TX_LEN, msg, name);
+		const buflen_t pad = serial_pad(parse_pos);
+		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, msg, name);
 		return false;
 	}
 
 	// We need the value as well
 	char *const value = strsep(&buf, " ");
 	if (value == NULL) {
-		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" value not set"), name);
+		const buflen_t pad = serial_pad(parse_pos+strlen(name));
+		snprintf_P(serial_tx + pad, SERIAL_TX_LEN - pad, PSTR("Expected '='"));
 		return false;
 	}
 	
 	// OK, now it gets exciting. We have all the functions, so
 	// just doing the magic!
+	buflen_t const val_pos = value - ref_p;
 	clean_errors();
 	bool ok = scanner(value, writer);
 	if (!ok) {
-		int pos = snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" write failed: "), name);
-		snprintf_P(serial_tx+pos, SERIAL_TX_LEN-pos, cmd_parse_error, cmd_parse_error_arg);
+		const buflen_t pad = serial_pad(val_pos + cmd_parse_error_pos);
+		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, cmd_parse_error, cmd_parse_error_arg);
 		return false;
 	}
 
@@ -166,7 +191,7 @@ static bool process_write(char *buf)
 		strcpy_P(serial_tx, PSTR("OK"));
 		return true;
 	}
-	return process_write(buf);
+	return process_write(buf, buf-ref_p);
 }
 
 // Search given command from the table generated to cmd.c
@@ -192,6 +217,8 @@ static int cmd_comparator(const void *key_void, const void *item_void)
 // performs the operations in there.
 bool interface_ascii(char *buf, buflen_t len)
 {
+	const char *const ref_p = buf;
+
 	// Handle corner cases: incorrect line ending or empty
 	// message. NB! strip_line_ending alters the buffer!
 	if (!strip_line_ending(buf, len)) {
@@ -207,14 +234,14 @@ bool interface_ascii(char *buf, buflen_t len)
 				strcpy_P(serial_tx, PSTR("   ^ Expecting arguments"));
 				return false;
 			}
-			return process_read(buf, serial_tx);
+			return process_read(buf, serial_tx, buf-ref_p);
 		}
 		if (strcasecmp_P(op, PSTR("set")) == 0) {
 			if (buf == NULL) {
 				strcpy_P(serial_tx, PSTR("   ^ Expecting arguments"));
 				return false;
 			}
-			return process_write(buf);
+			return process_write(buf, buf-ref_p);
 		}
 	}
 

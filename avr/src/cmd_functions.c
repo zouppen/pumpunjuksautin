@@ -50,6 +50,7 @@
 
 // Externs of these are exceptionally defined in cmd.h
 char const *volatile cmd_parse_error;
+volatile buflen_t cmd_parse_error_pos;
 uint32_t cmd_parse_error_arg;
 static buflen_t expected_count;
 
@@ -106,9 +107,8 @@ bool cmd_scan_int16(char *const buf_in, cmd_write_t *writer)
 	int16_t val;
 	int items = sscanf_P(buf_in, PSTR("%" SCNi16 "%n"), &val, &read);
 	if (items != 1 || buf_in[read] != '\0') {
-		cmd_parse_error = PSTR("Value at %d is not a digit");
-		// Calculate the position after the = sign
-		cmd_parse_error_arg = read;
+		cmd_parse_error = PSTR("Not a digit");
+		cmd_parse_error_pos = read;
 		return false;
 	}
 
@@ -131,9 +131,8 @@ bool cmd_scan_int32(char *const buf_in, cmd_write_t *writer)
 	int32_t val;
 	int items = sscanf_P(buf_in, PSTR("%" SCNi32 "%n"), &val, &read);
 	if (items != 1 || buf_in[read] != '\0') {
-		cmd_parse_error = PSTR("Value at %d is not a digit");
-		// Calculate the position after the = sign
-		cmd_parse_error_arg = read;
+		cmd_parse_error = PSTR("Not a digit");
+		cmd_parse_error_pos = read;
 		return false;
 	}
 
