@@ -28,11 +28,15 @@
 static bool strip_line_ending(char *buf, int const len);
 static bool process_read(char *buf, char *serial_out, buflen_t parse_pos);
 static bool process_write(char *buf, buflen_t parse_pos);
+static bool process_help(void);
 static cmd_ascii_t const *find_cmd(char const *const name);
 static int cmd_comparator(const void *key_void, const void *item_void);
 static buflen_t serial_pad(buflen_t n);
 static void clean_errors(void);
 static void error_full(buflen_t parse_pos);
+
+// Version definition is delivered by version.cmake
+extern char const version[] PROGMEM;
 
 // Replace line ending (LF or CRLF) from the message with NUL
 // character.
@@ -221,6 +225,25 @@ static bool process_write(char *buf, buflen_t parse_pos)
 	return process_write(buf, buf-ref_p);
 }
 
+static bool process_help()
+{
+	snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Pumpunjuksautin (%S) registers:\n"), version);
+	serial_tx_line();
+	while (serial_is_transmitting());
+	for (int i=0; i<cmd_ascii_len; i++) {
+		char const *item_name = pgm_read_ptr_near(&cmd_ascii[i].name);
+		bool has_r = pgm_read_ptr_near(&cmd_ascii[i].printer) != NULL;
+		bool has_w = pgm_read_ptr_near(&cmd_ascii[i].scanner) != NULL;
+		char r = has_r ? 'R': ' ';
+		char w = has_w ? 'W': ' ';
+		snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("  %c%c  %S"), r, w, item_name);
+		serial_tx_line();
+		while (serial_is_transmitting());
+	}
+	strncpy_P(serial_tx, PSTR("\nUsage:\n\n  GET [REGISTER]...\n  SET [REGISTER=VALUE]...\n"), SERIAL_TX_LEN);
+	return true;
+}
+
 // Search given command from the table generated to cmd.c
 static cmd_ascii_t const *find_cmd(char const *const name)
 {
@@ -270,8 +293,16 @@ bool interface_ascii(char *buf, buflen_t len)
 			}
 			return process_write(buf, buf-ref_p);
 		}
+		if (strcasecmp_P(op, PSTR("help")) == 0) {
+			if (buf != NULL) {
+				strcpy_P(serial_tx, PSTR("    ^ No arguments expected"));
+				return false;
+			}
+			return process_help();
+		}
+
 	}
 
-	strcpy_P(serial_tx, PSTR("^ Expecting 'GET' or 'SET'"));
+	strcpy_P(serial_tx, PSTR("^ Expecting 'GET', 'SET', or 'HELP'"));
 	return false;
 }
