@@ -112,8 +112,6 @@ bool cmd_scan_int16(char *const buf_in, cmd_write_t *writer)
 		return false;
 	}
 
-	val = bswap_16(val);
-
 	// Pass it on to Modbus handler.
 	buflen_t wrote = writer((char*)&val, sizeof(val));
 	if (wrote == sizeof(val)) {
@@ -138,8 +136,6 @@ bool cmd_scan_int32(char *const buf_in, cmd_write_t *writer)
 		cmd_parse_error_arg = read;
 		return false;
 	}
-
-	val = bswap_32(val);
 
 	// Pass it on to Modbus handler.
 	buflen_t wrote = writer((char*)&val, sizeof(val));
@@ -174,8 +170,7 @@ buflen_t cmd_read_target(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(2);
 
-	// Output time in big-endian byte order
-	*(uint16_t*)buf_out = bswap_16(juksautin_get_target());
+	*(uint16_t*)buf_out = juksautin_get_target();
 	return 2;
 }
 
@@ -184,7 +179,7 @@ buflen_t cmd_write_target(char const *const buf_in, buflen_t count)
 {
 	ENSURE_COUNT(2);
 
-	uint16_t a = bswap_16(*(uint16_t*)buf_in);
+	uint16_t a = *(uint16_t*)buf_in;
 	juksautin_set_target(a);
 	return 2;
 }
@@ -194,8 +189,7 @@ buflen_t cmd_read_k5_raw(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(2);
 
-	// Output time in big-endian byte order
-	*(uint16_t*)buf_out = bswap_16(juksautin_take_k5_raw_mv());
+	*(uint16_t*)buf_out = juksautin_take_k5_raw_mv();
 	return 2;
 }
 
@@ -204,8 +198,7 @@ buflen_t cmd_read_accu(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(2);
 
-	// Output time in big-endian byte order
-	*(uint16_t*)buf_out = bswap_16(juksautin_take_accumulator_temp());
+	*(uint16_t*)buf_out = juksautin_take_accumulator_temp();
 	return 2;
 }
 
@@ -214,8 +207,7 @@ buflen_t cmd_read_out(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(2);
 
-	// Output time in big-endian byte order
-	*(uint16_t*)buf_out = bswap_16(juksautin_take_outside_temp());
+	*(uint16_t*)buf_out = juksautin_take_outside_temp();
 	return 2;
 }
 
@@ -224,8 +216,7 @@ buflen_t cmd_read_error(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(2);
 
-	// Output time in big-endian byte order
-	*(uint16_t*)buf_out = bswap_16(juksautin_take_error());
+	*(uint16_t*)buf_out = juksautin_take_error();
 	return 2;
 }
 
@@ -234,8 +225,7 @@ buflen_t cmd_read_time(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	// Output time in big-endian byte order
-	*(uint32_t*)buf_out = bswap_32(time(NULL) + UNIX_OFFSET);
+	*(uint32_t*)buf_out = time(NULL) + UNIX_OFFSET;
 	return 4;
 }
 
@@ -244,7 +234,7 @@ buflen_t cmd_write_time(char const *const buf_in, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	time_t now = bswap_32(*(uint32_t*)buf_in);
+	time_t now = *(uint32_t*)buf_in;
 	clock_set_time(now);
 	return 4;
 }
@@ -254,7 +244,7 @@ buflen_t cmd_write_gmtoff(char const *const buf_in, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	uint32_t a = bswap_32(*(uint32_t*)buf_in);
+	uint32_t a = *(uint32_t*)buf_in;
 	eeprom_update_dword(&clock_ee_zone_now, a);
 	clock_set_zones_from_eeprom();
 	return 4;
@@ -265,7 +255,7 @@ buflen_t cmd_write_next_turn(char const *const buf_in, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	uint32_t a = bswap_32(*(uint32_t*)buf_in);
+	uint32_t a = *(uint32_t*)buf_in;
 	eeprom_update_dword(&clock_ee_ts_turn, a);
 	clock_set_zones_from_eeprom();
 	return 4;
@@ -276,7 +266,7 @@ buflen_t cmd_write_gmtoff_turn(char const *const buf_in, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	uint32_t a = bswap_32(*(uint32_t*)buf_in);
+	uint32_t a = *(uint32_t*)buf_in;
 	eeprom_update_dword(&clock_ee_zone_turn, a);
 	clock_set_zones_from_eeprom();
 	return 4;
@@ -288,8 +278,7 @@ buflen_t cmd_read_gmtoff(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	// Output time in big-endian byte order
-	*(int32_t*)buf_out = bswap_32(clock_get_gmtoff());
+	*(int32_t*)buf_out = clock_get_gmtoff();
 	return 4;
 }
 
@@ -298,8 +287,7 @@ buflen_t cmd_read_next_turn(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	// Output time in big-endian byte order
-	*(int32_t*)buf_out = bswap_32(eeprom_read_dword(&clock_ee_ts_turn));
+	*(int32_t*)buf_out = eeprom_read_dword(&clock_ee_ts_turn);
 	return 4;
 }
 
@@ -308,8 +296,7 @@ buflen_t cmd_read_gmtoff_turn(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	// Output time in big-endian byte order
-	*(int32_t*)buf_out = bswap_32(eeprom_read_dword(&clock_ee_zone_turn));
+	*(int32_t*)buf_out = eeprom_read_dword(&clock_ee_zone_turn);
 	return 4;
 }
 
@@ -318,7 +305,7 @@ buflen_t cmd_print_int16(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(2);
 
-	int32_t val = bswap_16(*(uint16_t*)buf_out);
+	int32_t val = *(uint16_t*)buf_out;
 	return snprintf_P(buf_out, count, PSTR("%" PRId16), val);
 }
 
@@ -327,16 +314,16 @@ buflen_t cmd_print_int32(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	int32_t val = bswap_32(*(uint32_t*)buf_out);
+	int32_t val = *(uint32_t*)buf_out;
 	return snprintf_P(buf_out, count, PSTR("%" PRId32), val);
 }
 
-// Formats big-endian time in ISO 8601 format with time zone
+// Formats time in UNIX epoch in ISO 8601 format with time zone
 buflen_t cmd_print_time(char *const buf_out, buflen_t count)
 {
 	ENSURE_COUNT(4);
 
-	time_t now = bswap_32(*(uint32_t*)buf_out) - UNIX_OFFSET;
+	time_t now = *(uint32_t*)buf_out - UNIX_OFFSET;
 	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
 	return wrote ? wrote-1 : OUT_OF_BUFFER;
 }
