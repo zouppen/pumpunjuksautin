@@ -89,7 +89,7 @@ void juksautin_init(void)
 
 void juksautin_set_target(uint16_t const mv)
 {
-	uint16_t new_target = (uint32_t)mv * MV_DIV / MV_MULT;
+	uint16_t new_target = ((uint32_t)mv * MV_DIV + MV_DIV / 2) / MV_MULT;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		target = new_target;
 	}
@@ -102,7 +102,7 @@ uint16_t juksautin_get_target(void)
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		raw = target;
 	}
-	return raw * MV_MULT / MV_DIV;
+	return (raw * MV_MULT + MV_MULT / 2) / MV_DIV;
 }
 
 float juksautin_compute_k5_real_voltage(float mv, float ratio, float um, float rm)
