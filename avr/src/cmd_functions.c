@@ -219,6 +219,15 @@ buflen_t cmd_read_error(char *const buf_out, buflen_t count)
 	return 2;
 }
 
+// Reads juksautus ratio to 1 16-bit register
+buflen_t cmd_read_ratio(char *const buf_out, buflen_t count)
+{
+	ENSURE_COUNT(2);
+
+	*(uint16_t*)buf_out = juksautin_take_ratio();
+	return 2;
+}
+
 // Reads current time to 2 16-bit registers
 buflen_t cmd_read_time(char *const buf_out, buflen_t count)
 {
