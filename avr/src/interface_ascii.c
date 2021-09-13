@@ -30,6 +30,7 @@ static bool process_read(char *buf, char *serial_out);
 static bool process_write(char *buf);
 static cmd_ascii_t const *find_cmd(char const *const name);
 static int cmd_comparator(const void *key_void, const void *item_void);
+static void clean_errors(void);
 
 // Replace line ending (LF or CRLF) from the message with NUL
 // character.
@@ -112,6 +113,11 @@ static bool process_read(char *buf, char *serial_out)
 	return false;
 }
 
+static void clean_errors(void)
+{
+	cmd_parse_error = PSTR("Unknown error");
+}
+
 // Process write requests. Outputs error messages or "OK".
 static bool process_write(char *buf)
 {
@@ -146,7 +152,7 @@ static bool process_write(char *buf)
 	
 	// OK, now it gets exciting. We have all the functions, so
 	// just doing the magic!
-	cmd_parse_error = PSTR("Unknown error");
+	clean_errors();
 	bool ok = scanner(value, writer);
 	if (!ok) {
 		int pos = snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Field \"%s\" write failed: "), name);

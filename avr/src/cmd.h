@@ -58,7 +58,7 @@ extern cmd_modbus_t const cmd_modbus[];
 extern int const cmd_modbus_len;
 
 // For passing errors out of difficult places. Points to PROGMEM storage.
-extern char const *cmd_parse_error;
+extern char const *volatile cmd_parse_error;
 
 // Extra 4 bytes for formatted strings. TODO vararg stuff.
 extern uint32_t cmd_parse_error_arg;
