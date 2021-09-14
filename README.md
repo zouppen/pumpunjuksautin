@@ -16,7 +16,7 @@ efficient heating.
 ## Repository content
 This repository contains the design of the whole Pumpunjuksautin device,
 divided to it's components:
-* [Firmware source code](avr/README.md)
+* [Firmware source code](avr/)
 * [Documentation](docs/)
 * [Enclosure design](enclosure/README.md)
 * [Printed circuit board design](pcb/)
