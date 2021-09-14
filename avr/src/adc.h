@@ -1,5 +1,4 @@
-#ifndef CMD_ADC_H_
-#define CMD_ADC_H_
+#pragma once
 
 // Analog-to-digital interface
 
@@ -20,5 +19,3 @@ void adc_start_sourcing(uint8_t chan);
 // You need to implement this. Selects ADC channel based on your
 // criteria.
 uint8_t adc_channel_selection(void);
-
-#endif // CMD_ADC_H_

@@ -1,5 +1,4 @@
-#ifndef CMD_H_
-#define CMD_H_
+#pragma once
 
 // Command interface data types
 
@@ -65,5 +64,3 @@ extern volatile buflen_t cmd_parse_error_pos;
 
 // Extra 4 bytes for formatted strings. TODO vararg stuff.
 extern uint32_t cmd_parse_error_arg;
-
-#endif // CMD_H_

@@ -1,5 +1,4 @@
-#ifndef CMD_JUKSAUTIN_H_
-#define CMD_JUKSAUTIN_H_
+#pragma once
 
 // Functions specific to Pumpunjuksautin. NB! Functions with _take_ in
 // the name read and empty the internal average counter.
@@ -36,5 +35,3 @@ uint16_t juksautin_take_outside_temp(void);
 
 // Get accumulator tank temperature
 uint16_t juksautin_take_accumulator_temp(void);
-
-#endif // CMD_JUKSAUTIN_H_

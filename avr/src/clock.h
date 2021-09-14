@@ -1,5 +1,4 @@
-#ifndef CMD_CLOCK_H_
-#define CMD_CLOCK_H_
+#pragma once
 
 /*
   Real-time clock
@@ -57,5 +56,3 @@ void clock_arm_timer(uint8_t timeout);
 // Get currently observed UTC offset (time zone with DST adjustment,
 // if any)
 int32_t clock_get_gmtoff(void);
-
-#endif // CMD_CLOCK_H_
