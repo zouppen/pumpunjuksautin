@@ -52,7 +52,7 @@
 char const *volatile cmd_parse_error;
 volatile buflen_t cmd_parse_error_pos;
 uint32_t cmd_parse_error_arg;
-static buflen_t expected_count;
+volatile static buflen_t expected_count;
 
 // Version definition is delivered by version.cmake
 extern char const version[] PROGMEM;
