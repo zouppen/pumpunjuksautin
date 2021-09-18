@@ -3,6 +3,7 @@
 // Command interface data types
 
 #include "serial.h"
+#include "modbus_types.h"
 
 // Function pointer for read command. Populates buffer of given length
 // and returns number of bytes written
@@ -23,13 +24,6 @@ typedef bool (cmd_scan_t)(char *buf_in, cmd_write_t *writer);
 // ASCII form.
 typedef buflen_t (cmd_print_t)(char *const buf_out, buflen_t count);
 
-typedef enum {
-	COIL = 0,
-	DISCRETE_INPUT = 1,
-	INPUT_REGISTER = 3,
-	HOLDING_REGISTER = 4
-} cmd_type_t;
-
 typedef struct {
 	cmd_read_t *read;      // NULL if not readable
 	cmd_write_t *write;    // NULL if not writable
@@ -43,7 +37,7 @@ typedef struct {
 } cmd_ascii_t;
 
 typedef struct {
-	cmd_type_t regtype;   // Register type, see definition
+	modbus_object_t type; // Object type, see definition
 	uint16_t addr;        // Modbus address
 	cmd_action_t action;  // Read and write actions
 } cmd_modbus_t;

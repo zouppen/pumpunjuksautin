@@ -87,13 +87,14 @@ void juksautin_init(void)
 	target = eeprom_read_word(&ee_target);
 }
 
-void juksautin_set_target(uint16_t const mv)
+modbus_status_t juksautin_set_target(uint16_t const mv)
 {
 	uint16_t new_target = ((uint32_t)mv * MV_DIV + MV_DIV / 2) / MV_MULT;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		target = new_target;
 	}
 	eeprom_update_word(&ee_target, new_target);
+	return MODBUS_OK;
 }
 
 uint16_t juksautin_get_target(void)

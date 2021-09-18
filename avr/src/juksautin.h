@@ -1,5 +1,7 @@
 #pragma once
 
+#include "modbus_types.h"
+
 // Functions specific to Pumpunjuksautin. NB! Functions with _take_ in
 // the name read and empty the internal average counter.
 
@@ -10,7 +12,7 @@ void juksautin_init(void);
 // Set given target voltage to K5 line in millivolts. The electronics
 // can only do pulldown so it make voltage lower and therefore make
 // the measured temperature higher (NTC thermistor)
-void juksautin_set_target(uint16_t mv);
+modbus_status_t juksautin_set_target(uint16_t mv);
 
 // Get previously set target voltage of K5 line in millivolts.
 uint16_t juksautin_get_target(void);
