@@ -143,6 +143,23 @@ uint16_t juksautin_take_accumulator_temp(void)
 	return to_millivolts(take_accu(&v_accu.accumulator_temp));
 }
 
+// Reads itmicavok LED status
+bool juksautin_get_led()
+{
+	return STATE(PIN_LED);
+}
+
+// Changes indicator LED status.
+modbus_status_t juksautin_set_led(bool state)
+{
+	if (state) {
+		HIGH(PIN_LED);
+	} else {
+		LOW(PIN_LED);
+	}
+	return MODBUS_OK;
+}
+
 // Take (read and empty) analog accumulator.
 static accu_t take_accu(volatile accu_t *p)
 {
