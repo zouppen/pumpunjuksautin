@@ -136,7 +136,7 @@ add_custom_command(
 
 # Generator of cmd.c source file.
 add_custom_command(
-  DEPENDS "commands.tsv" "generators/commands"
+  DEPENDS commands.tsv ${CMAKE_CURRENT_SOURCE_DIR}/generators/commands
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/cmd.c
   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/generators/commands
 	  <${CMAKE_CURRENT_SOURCE_DIR}/commands.tsv
