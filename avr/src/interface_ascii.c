@@ -32,7 +32,6 @@ static bool process_help(void);
 static cmd_ascii_t const *find_cmd(char const *const name);
 static int cmd_comparator(const void *key_void, const void *item_void);
 static buflen_t serial_pad(buflen_t n);
-static void clean_errors(void);
 static void error_full(buflen_t parse_pos);
 
 // Version definition is delivered by version.cmake
@@ -84,7 +83,7 @@ static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
 
 	// Collecting scanner and writer from PROGMEM storage
 	cmd_print_t const *printer = pgm_read_ptr_near(&(cmd->printer));
-	cmd_write_t const *reader = pgm_read_ptr_near(&(cmd->action.read));
+	void const *reader = pgm_read_ptr_near(&(cmd->action.read));
 
 	if (printer == NULL) {
 		char const *msg = reader == NULL
@@ -100,20 +99,10 @@ static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
 	serial_out += strlcpy(serial_out, name, SERIAL_TX_END - serial_out);
 	if (serial_out+1 >= SERIAL_TX_END) goto serial_full;
 	*serial_out++ = '=';
-	
-	// Collect the data first to the serial buffer. No NUL byte
-	// required in the end, therefore using > instead of >= in
-	// comparison.
-	if (reader != NULL) {
-		// Skipping this part if not using binary reader
-		// (command which has only ASCII implementation).
-		buflen_t wrote_modbus = reader(serial_out, SERIAL_TX_END - serial_out);
-		if (serial_out + wrote_modbus > SERIAL_TX_END) goto serial_full;
-	}
 
-	// Populate output buffer with final content. Overwriting the
-	// content already in the buffer.
-	buflen_t wrote = printer(serial_out, SERIAL_TX_END - serial_out);
+	// Populate output buffer with the content. Function is
+	// responsible for the type safety of void function pointer.
+	buflen_t wrote = printer(serial_out, SERIAL_TX_END - serial_out, reader);
 
 	// Ensure the content is fitted. Ensure space for NUL or space byte.
 	serial_out += wrote;
@@ -162,12 +151,6 @@ static void error_full(buflen_t parse_pos)
 	serial_tx[msg_pos + msg_len + tail] = '\0';
 }
 
-static void clean_errors(void)
-{
-	cmd_parse_error = PSTR("Unknown error");
-	cmd_parse_error_pos = 0;
-}
-
 // Process write requests. Outputs error messages or "OK".
 static bool process_write(char *buf, buflen_t parse_pos)
 {
@@ -185,7 +168,7 @@ static bool process_write(char *buf, buflen_t parse_pos)
 
 	// Collecting scanner and writer from PROGMEM storage
 	cmd_scan_t const *scanner = pgm_read_ptr_near(&(cmd->scanner));
-	cmd_write_t const *writer = pgm_read_ptr_near(&(cmd->action.write));
+	void const *writer = pgm_read_ptr_near(&(cmd->action.write));
 
 	if (scanner == NULL) {
 		char const *msg = writer == NULL
@@ -208,11 +191,10 @@ static bool process_write(char *buf, buflen_t parse_pos)
 	// OK, now it gets exciting. We have all the functions, so
 	// just doing the magic!
 	buflen_t const val_pos = value - ref_p;
-	clean_errors();
-	bool ok = scanner(value, writer);
-	if (!ok) {
-		const buflen_t pad = serial_pad(val_pos + cmd_parse_error_pos);
-		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, cmd_parse_error, cmd_parse_error_arg);
+	const cmd_result_t res = scanner(value, writer);
+	if (res.error_msg != NULL) {
+		const buflen_t pad = serial_pad(val_pos + res.error_pos);
+		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, res.error_msg, res.msg_arg1);
 		return false;
 	}
 

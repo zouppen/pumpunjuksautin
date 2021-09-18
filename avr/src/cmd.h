@@ -5,28 +5,30 @@
 #include "serial.h"
 #include "modbus_types.h"
 
-// Function pointer for read command. Populates buffer of given length
-// and returns number of bytes written
-typedef buflen_t (cmd_read_t)(char *const buf_out, buflen_t count);
+// Scan result. If error_msg == NULL it succeeded
+typedef struct {
+	buflen_t error_pos;    // Position relative to buf_in
+	char const *error_msg; // Error, if any. Stored in PROGMEM.
+	uint32_t msg_arg1;     // First argument to the error msg
+} cmd_result_t;
 
-// Function pointer for write command. Reads buffer of given length
-// and return number of bytes processed.
-typedef buflen_t (cmd_write_t)(char const *const buf_in, buflen_t count);
+// Successful scan result. Defined in cmd_functions.c
+extern const cmd_result_t cmd_scan_success;
 
 // Function which parses already tokenized (null terminated) text and
-// passes it to given write function. Returns true if the scanning
-// succeeded. Parameter buf_in is not const because further
-// tokenization might be needed in the function.
-typedef bool (cmd_scan_t)(char *buf_in, cmd_write_t *writer);
+// passes it to given setter function. Returns cmd_result_t
+// containing scanning result. Parameter buf_in is not const because
+// further tokenization might be needed in the function.
+typedef cmd_result_t cmd_scan_t(char *const buf_in, void const *setter);
 
-// Function for textual output. It takes in the buffer where reader
-// has already written the values and it rewrites the contents to
-// ASCII form.
-typedef buflen_t (cmd_print_t)(char *const buf_out, buflen_t count);
+// Function for ASCII output for humans. It takes in the buffer where
+// to write the output, remaining buffer length and getter function
+// where to receive the value to output.
+typedef buflen_t cmd_print_t(char *const buf_out, buflen_t count, void const *getter);
 
 typedef struct {
-	cmd_read_t *read;      // NULL if not readable
-	cmd_write_t *write;    // NULL if not writable
+	void *read;           // NULL if not readable
+	void *write;          // NULL if not writable
 } cmd_action_t;
 
 typedef struct {
@@ -50,11 +52,3 @@ extern int const cmd_ascii_len;
 extern cmd_modbus_t const cmd_modbus[];
 extern int const cmd_modbus_len;
 
-// For passing errors out of difficult places. Points to PROGMEM storage.
-extern char const *volatile cmd_parse_error;
-
-// Parse error position in the buffer. For nicer errors
-extern volatile buflen_t cmd_parse_error_pos;
-
-// Extra 4 bytes for formatted strings. TODO vararg stuff.
-extern uint32_t cmd_parse_error_arg;

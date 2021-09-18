@@ -10,11 +10,14 @@ pointerize() {
     # Prefix '&' if it's a function, otherwise NULL
     if test "$2" = - -o "$2" = NULL; then
 	echo -n NULL
-    else
+    elif test "${3-}" = internal; then
 	# Output the function name
 	echo -n "&cmd_$1_$2"
 	# Produce C prototype for given function, too
 	echo "cmd_$1_t cmd_$1_$2;" >&3
+    else
+	# Output the function name. no prototype
+	echo -n "&$2"
     fi
 }
 
@@ -31,6 +34,8 @@ cat <<EOF
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 #include "cmd.h"
+#include "juksautin.h"
+#include "clock.h"
 
 EOF
 
@@ -41,8 +46,8 @@ while read r_type r_address r_name r_read r_write r_printer r_scanner; do
     # Make functions pointers. Also, creates prototypes.
     r_read="`pointerize read "$r_read"`"
     r_write="`pointerize write "$r_write"`"
-    r_printer="`pointerize print "$r_printer"`"
-    r_scanner="`pointerize scan "$r_scanner"`"
+    r_printer="`pointerize print "$r_printer" internal`"
+    r_scanner="`pointerize scan "$r_scanner" internal`"
 
     # Produce lines for both ASCII interface and Modbus
     action="{ $r_read, $r_write }"
