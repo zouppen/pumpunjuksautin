@@ -23,36 +23,42 @@
 
 #include <time.h>
 #include <stdbool.h>
-
-// These variables are stored in EEPROM. Zone variables are signed
-// despite of the data type. Parameters zone_now and zone_turn are in
-// "gmtoff" format, i.e. seconds east to UTC, e.g. 3600 for
-// UTC+1. Parameter zone_now is the currently observed gmtoffime
-// zone. Parameter ts_turn defines when the clocks turn the next
-// time. Parameter zone_turn is the gmtoff observed after that
-// moment. In case of no known future DST changes, ts_turn must be 0.
-extern uint32_t clock_ee_zone_now;
-extern uint32_t clock_ee_ts_turn;
-extern uint32_t clock_ee_zone_turn;
+#include "modbus_types.h"
 
 // Initialize clock using TIMER2
 void clock_init(void);
 
 // Set clock to given time. NB! Resets also internal tick
 // counters. Timestamp epoch is UNIX.
-void clock_set_time(time_t const ts_now);
-
-// Sets time zone information from EEPROM- See clock_ee_* definitions
-// above for how to set the data.
-void clock_set_zones_from_eeprom(void);
+void clock_set_time_unix(time_t const ts_now);
 
 // Test if clock is already set or is it running fake time
 bool clock_is_set(void);
 
-// Arm timer. Timeout unit is prescaler / F_CPU = 16µs and maximum
-// delay of prescaler * COUNT_A / F_CPU = 4ms.
-void clock_arm_timer(uint8_t timeout);
+// Sets current gmtoff (time zone in seconds east to Greenwich).
+modbus_status_t clock_set_gmtoff(int32_t gmtoff);
+
+// Sets next clock turn timestamp. Timestamp has UNIX epoch.
+modbus_status_t clock_set_next_turn(uint32_t ts);
+
+// Sets gmtoff after next clock turn.
+modbus_status_t clock_set_gmtoff_turn(int32_t gmtoff);
+
+// Reads current time as UNIX timestamp
+int32_t clock_get_time_unix(void);
 
 // Get currently observed UTC offset (time zone with DST adjustment,
-// if any)
+// if any). May be different than the one set by clock_set_gmtoff() if
+// clocks have already been turned.
 int32_t clock_get_gmtoff(void);
+
+// Read next clock turn as UNIX timestamp 
+uint32_t clock_get_next_turn(void);
+
+// Read next clock turn timestamp
+uint32_t clock_get_gmtoff_turn();
+
+// Arm timer for interrupt TIMER2_COMPB_vect. Timeout unit is
+// prescaler / F_CPU = 16µs and maximum delay of prescaler * COUNT_A /
+// F_CPU = 4ms.
+void clock_arm_timer(uint8_t timeout);

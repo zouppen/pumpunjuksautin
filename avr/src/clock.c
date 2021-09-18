@@ -23,6 +23,7 @@
 extern const long __utc_offset;
 
 static int unixy_dst(const time_t *time, int32_t *z);
+static void update_tzdata_from_eeprom(void);
 
 static volatile uint8_t counter_b = CLOCK_B;
 static bool is_set = false;
@@ -31,12 +32,18 @@ static bool is_set = false;
 static time_t clock_turn_avr;
 static int32_t clock_turn_offset;
 
-// Configuration in EEPROM. These are uints for compatibility. In
-// practice zone variables are signed, but that's taken care in
-// clock_set_zones_from_eeprom()
-uint32_t clock_ee_zone_now EEMEM = 0;
-uint32_t clock_ee_ts_turn EEMEM = 0;
-uint32_t clock_ee_zone_turn EEMEM = 0;
+// These variables are stored in EEPROM. Zone variables are signed
+// despite of the data type. Parameters zone_now and zone_turn are in
+// "gmtoff" format, i.e. seconds east to UTC, e.g. 3600 for
+// UTC+1. Parameter zone_now is the currently observed gmtoffime
+// zone. Parameter ts_turn defines when the clocks turn the next
+// time. Parameter zone_turn is the gmtoff observed after that
+// moment. In case of no known future DST changes, ts_turn must be 0.
+// These are uints for compatibility. In practice zone variables are
+// signed, but that's taken care in update_tzdata_from_eeprom().
+static uint32_t ee_zone_now EEMEM = 0;
+static uint32_t ee_ts_turn EEMEM = 0;
+static uint32_t ee_zone_turn EEMEM = 0;
 
 void clock_init(void)
 {
@@ -69,13 +76,13 @@ void clock_init(void)
 #endif
 
 	// Read current timezone data from EEPROM
-	clock_set_zones_from_eeprom();
+	update_tzdata_from_eeprom();
 
 	// Use our own function for summer time math
 	set_dst(unixy_dst);
 }
 
-void clock_set_time(time_t const ts_now)
+void clock_set_time_unix(time_t const ts_now)
 {
 	// AVR uses Zigbee epoch. Converting from UNIX epoch
 	time_t const avr_now = ts_now - UNIX_OFFSET;
@@ -90,12 +97,19 @@ void clock_set_time(time_t const ts_now)
 	}
 }
 
-void clock_set_zones_from_eeprom(void)
+bool clock_is_set(void)
+{
+	return is_set;
+}
+
+// Reads time zone data from EEPROM and apply it to the system. See
+// ee_* definitions above for how to set the data.
+static void update_tzdata_from_eeprom(void)
 {
 	// Collect data from persistent memory
-	int32_t const zone_now = eeprom_read_dword(&clock_ee_zone_now);
-	time_t const ts_turn = eeprom_read_dword(&clock_ee_ts_turn);
-	int32_t const zone_turn = eeprom_read_dword(&clock_ee_zone_turn);
+	int32_t const zone_now = eeprom_read_dword(&ee_zone_now);
+	time_t const ts_turn = eeprom_read_dword(&ee_ts_turn);
+	int32_t const zone_turn = eeprom_read_dword(&ee_zone_turn);
 
 	// DST structure in UNIX and AVR-libc are different. Unix uses
 	// time zone offset directly but avr-libc thinks traditionally
@@ -121,9 +135,47 @@ void clock_set_zones_from_eeprom(void)
 	}
 }
 
-bool clock_is_set(void)
+modbus_status_t clock_set_gmtoff(int32_t gmtoff)
 {
-	return is_set;
+	eeprom_update_dword(&ee_zone_now, gmtoff);
+	update_tzdata_from_eeprom();
+	return MODBUS_OK;
+}
+
+modbus_status_t clock_set_next_turn(uint32_t ts)
+{
+	eeprom_update_dword(&ee_ts_turn, ts);
+	update_tzdata_from_eeprom();
+	return MODBUS_OK;
+}
+
+modbus_status_t clock_set_gmtoff_turn(int32_t gmtoff)
+{
+	eeprom_update_dword(&ee_zone_turn, gmtoff);
+	update_tzdata_from_eeprom();
+	return MODBUS_OK;
+}
+
+int32_t clock_get_time_unix()
+{
+	return time(NULL) + UNIX_OFFSET;
+}
+
+int32_t clock_get_gmtoff()
+{
+	time_t now;
+	time(&now);
+	return __utc_offset + unixy_dst(&now, NULL);
+}
+
+uint32_t clock_get_next_turn()
+{
+	return eeprom_read_dword(&ee_ts_turn);
+}
+
+uint32_t clock_get_gmtoff_turn()
+{
+	return eeprom_read_dword(&ee_zone_turn);
 }
 
 void clock_arm_timer(uint8_t delay)
@@ -165,11 +217,4 @@ static int unixy_dst(const time_t *time, int32_t *z)
 	bool const is_now_dst = before_turn ^ towards_summer;
 
 	return is_now_dst ? labs(clock_turn_offset) : 0;
-}
-
-int32_t clock_get_gmtoff()
-{
-	time_t now;
-	time(&now);
-	return __utc_offset + unixy_dst(&now, NULL);
 }
