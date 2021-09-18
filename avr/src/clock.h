@@ -30,7 +30,7 @@ void clock_init(void);
 
 // Set clock to given time. NB! Resets also internal tick
 // counters. Timestamp epoch is UNIX.
-void clock_set_time_unix(time_t const ts_now);
+modbus_status_t clock_set_time_unix(time_t const ts_now);
 
 // Test if clock is already set or is it running fake time
 bool clock_is_set(void);

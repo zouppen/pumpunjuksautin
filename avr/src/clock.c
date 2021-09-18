@@ -82,7 +82,7 @@ void clock_init(void)
 	set_dst(unixy_dst);
 }
 
-void clock_set_time_unix(time_t const ts_now)
+modbus_status_t clock_set_time_unix(time_t const ts_now)
 {
 	// AVR uses Zigbee epoch. Converting from UNIX epoch
 	time_t const avr_now = ts_now - UNIX_OFFSET;
@@ -95,6 +95,7 @@ void clock_set_time_unix(time_t const ts_now)
 		set_system_time(avr_now);
 		is_set = true;
 	}
+	return MODBUS_OK;
 }
 
 bool clock_is_set(void)
