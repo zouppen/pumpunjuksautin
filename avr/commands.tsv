@@ -10,5 +10,5 @@ type	address	name	getter	setter	cmd_print	cmd_scan
 4	14	out	juksautin_take_outside_temp	-	uint16	-
 4	16	error	juksautin_take_error	-	uint16	-
 4	18	ratio	juksautin_take_ratio	-	uint16	-
--	-	version	-	-	version	-
--	-	now	-	-	now	-
+-	-	version	cmd_version	-	string	-
+-	-	now	cmd_now	-	string	-

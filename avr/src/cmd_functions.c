@@ -133,8 +133,8 @@ buflen_t cmd_print_bool(char *const buf_out, buflen_t count, void *getter)
 	return 1;
 }
 
-// Outputs version number. Doesn't use buffer for input.
-buflen_t cmd_print_version(char *const buf_out, buflen_t count, void *_)
+// Outputs version number.
+buflen_t cmd_version(char *const buf_out, buflen_t count)
 {
 	return strlcpy_P(buf_out, version, count);
 }
@@ -153,8 +153,15 @@ buflen_t cmd_print_int32(char *const buf_out, buflen_t count, void *getter)
 	return snprintf_P(buf_out, count, PSTR("%" PRId32), f());
 }
 
+// Basically just a wrapper for printing strings.
+buflen_t cmd_print_string(char *const buf_out, buflen_t count, void *getter)
+{
+	get_string_t *f = getter;
+	return f(buf_out, count);
+}
+
 // Formats current time in ISO 8601 format with time zone
-buflen_t cmd_print_now(char *const buf_out, buflen_t count, void *_)
+buflen_t cmd_now(char *const buf_out, buflen_t count)
 {
 	time_t now = time(NULL);
 	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
@@ -172,7 +179,7 @@ static char const *modbus_strerror(modbus_status_t e)
 }
 
 // Just writes PONG. For testing
-buflen_t cmd_print_pong(char *const buf_out, buflen_t count, void *_)
+buflen_t cmd_pong(char *const buf_out, buflen_t count)
 {
 	if (count < 4) return OUT_OF_BUFFER;
 

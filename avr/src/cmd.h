@@ -59,6 +59,7 @@ typedef int32_t get_int32_t(void);
 typedef uint16_t get_uint16_t(void);
 typedef uint32_t get_uint32_t(void);
 typedef bool get_bool_t(void);
+typedef buflen_t get_string_t(char *, buflen_t);
 typedef modbus_status_t set_int16_t(int16_t);
 typedef modbus_status_t set_int32_t(int32_t);
 typedef modbus_status_t set_uint16_t(uint16_t);
