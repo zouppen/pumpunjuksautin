@@ -5,12 +5,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef uint8_t buflen_t;
+
 // Serial buffer lengths. If you want to go beyond 255, remember to
 // change buflen_t from uint8_t to uint16_t.
 #define SERIAL_RX_LEN 80
 #define SERIAL_TX_LEN 80
 
-typedef uint8_t buflen_t;
+// Useful return value. Use < SERIAL_TX_LEN in comparison instead of
+// this because this indicates the maximum value.
+#define BUFLEN_MAX ({ buflen_t _a = ~0; _a; })
 
 typedef struct {
 	int good;         // Number of good frames

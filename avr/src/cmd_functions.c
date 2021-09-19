@@ -25,8 +25,6 @@
 #include "pin.h"
 #include "hardware_config.h"
 
-#define OUT_OF_BUFFER (~0)
-
 const cmd_result_t cmd_scan_success = { 0, NULL, 0 };
 
 // Using GCC builtins for byte order swaps
@@ -126,7 +124,7 @@ cmd_result_t cmd_scan_int32(char *const buf_in, void *setter)
 // Outputs boolean value.
 buflen_t cmd_print_bool(char *const buf_out, buflen_t count, void *getter)
 {
-	if (count < 1) return OUT_OF_BUFFER;
+	if (count < 1) return BUFLEN_MAX;
 
 	get_bool_t *f = getter;
 	*buf_out = f() ? '1' : '0';
@@ -165,7 +163,7 @@ buflen_t cmd_now(char *const buf_out, buflen_t count)
 {
 	time_t now = time(NULL);
 	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
-	return wrote == 25 ? wrote-1 : OUT_OF_BUFFER;
+	return wrote == 25 ? wrote-1 : BUFLEN_MAX;
 }
 
 static char const *modbus_strerror(modbus_status_t e)
@@ -181,7 +179,7 @@ static char const *modbus_strerror(modbus_status_t e)
 // Just writes PONG. For testing
 buflen_t cmd_pong(char *const buf_out, buflen_t count)
 {
-	if (count < 4) return OUT_OF_BUFFER;
+	if (count < 4) return BUFLEN_MAX;
 
 	buf_out[0] = 'P';
 	buf_out[1] = 'O';
