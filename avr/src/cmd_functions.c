@@ -47,14 +47,6 @@ const cmd_result_t cmd_scan_success = { 0, NULL, 0 };
 
 static char const *modbus_strerror(modbus_status_t e);
 
-// Typedefs for supported getters & setters
-typedef int16_t get_int16_t(void);
-typedef int32_t get_int32_t(void);
-typedef bool get_bool_t(void);
-typedef modbus_status_t set_int16_t(int16_t);
-typedef modbus_status_t set_int32_t(int32_t);
-typedef modbus_status_t set_bool_t(bool);
-
 // Version definition is delivered by version.cmake
 extern char const version[] PROGMEM;
 

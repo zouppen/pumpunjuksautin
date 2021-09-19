@@ -6,18 +6,22 @@ sort_and_append() {
     sort "$1" | sed '$ s/,$//'
 }
 
+is_null() {
+    test "$1" = - -o "$1" = NULL
+}
+
 pointerize() {
-    # Prefix '&' if it's a function, otherwise NULL
-    if test "$2" = - -o "$2" = NULL; then
+    if is_null "$1"; then
 	echo -n NULL
-    elif test "${3-}" = internal; then
-	# Output the function name
-	echo -n "&cmd_$1_$2"
-	# Produce C prototype for given function, too
-	echo "cmd_$1_t cmd_$1_$2;" >&3
     else
-	# Output the function name. no prototype
-	echo -n "&$2"
+	# Output the function name with a prefix
+	echo -n "&${2-}$1"
+    fi
+}
+
+prototype() {
+    if ! is_null "$2"; then
+	echo "$1$2;" >&3
     fi
 }
 
@@ -42,23 +46,32 @@ EOF
 # Skip header line
 read foo
 
-while read r_type r_address r_name r_read r_write r_printer r_scanner; do
-    # Make functions pointers. Also, creates prototypes.
-    r_read="`pointerize read "$r_read"`"
-    r_write="`pointerize write "$r_write"`"
-    r_printer="`pointerize print "$r_printer" internal`"
-    r_scanner="`pointerize scan "$r_scanner" internal`"
+while read type address name r_read r_write r_printer r_scanner; do
+    # Make functions pointers
+    fp_read="`pointerize "$r_read"`"
+    fp_write="`pointerize "$r_write"`"
+    fp_printer="`pointerize "$r_printer" cmd_print_`"
+    fp_scanner="`pointerize "$r_scanner" cmd_scan_`"
 
+    # Create prototypes for functions in cmd_functions.c
+    prototype "cmd_print_t cmd_print_" "$r_printer"
+    prototype "cmd_scan_t cmd_scan_" "$r_scanner"
+
+    # Create prototypes for getters and setters (to validate type
+    # safety on the way)
+    prototype "get_${r_printer}_t " "$r_read"
+    prototype "set_${r_scanner}_t " "$r_write"
+    
     # Produce lines for both ASCII interface and Modbus
-    action="{ $r_read, $r_write }"
-    if test "$r_name" != -; then
+    action="{ $fp_read, $fp_write }"
+    if test "$name" != -; then
 	# PROGMEM strings must be outside of array initialization
-	echo "static char const name_$r_name[] PROGMEM = \"$r_name\";"
+	echo "static char const name_$name[] PROGMEM = \"$name\";"
 	# The actual array item
-	echo "	{ name_$r_name, $action, $r_printer, $r_scanner }," >&4
+	echo "	{ name_$name, $action, $fp_printer, $fp_scanner }," >&4
     fi
-    if test "$r_type" != -; then
-	echo "	{`printf %2d  "$r_type"`, 0x`printf %04x "$r_address"`, $action }," >&5
+    if test "$type" != -; then
+	echo "	{`printf %2d  "$type"`, 0x`printf %04x "$address"`, $action }," >&5
     fi
 done
 

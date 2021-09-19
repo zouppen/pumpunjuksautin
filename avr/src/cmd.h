@@ -26,6 +26,15 @@ typedef cmd_result_t cmd_scan_t(char *const buf_in, void const *setter);
 // where to receive the value to output.
 typedef buflen_t cmd_print_t(char *const buf_out, buflen_t count, void const *getter);
 
+// Aliases. Scanners use scanf() which can parse unsigned numbers
+// correctly, no need to implement them twice.
+#define cmd_scan_uint16 cmd_scan_int16
+#define cmd_scan_uint32 cmd_scan_int32
+
+// We really would need unsigned printers separately, but TODO
+#define cmd_print_uint16 cmd_print_int16
+#define cmd_print_uint32 cmd_print_int32
+
 typedef struct {
 	void *read;           // NULL if not readable
 	void *write;          // NULL if not writable
@@ -44,6 +53,18 @@ typedef struct {
 	cmd_action_t action;  // Read and write actions
 } cmd_modbus_t;
 
+// Typedefs for supported getters & setters
+typedef int16_t get_int16_t(void);
+typedef int32_t get_int32_t(void);
+typedef uint16_t get_uint16_t(void);
+typedef uint32_t get_uint32_t(void);
+typedef bool get_bool_t(void);
+typedef modbus_status_t set_int16_t(int16_t);
+typedef modbus_status_t set_int32_t(int32_t);
+typedef modbus_status_t set_uint16_t(uint16_t);
+typedef modbus_status_t set_uint32_t(uint32_t);
+typedef modbus_status_t set_bool_t(bool);
+
 // ASCII command interface. Sorted by command name.
 extern cmd_ascii_t const cmd_ascii[];
 extern int const cmd_ascii_len;
@@ -51,4 +72,3 @@ extern int const cmd_ascii_len;
 // Modbus command interface. Sorted by (command type, address).
 extern cmd_modbus_t const cmd_modbus[];
 extern int const cmd_modbus_len;
-
