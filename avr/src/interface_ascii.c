@@ -83,7 +83,8 @@ static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
 
 	// Collecting scanner and writer from PROGMEM storage
 	cmd_print_t const *printer = pgm_read_ptr_near(&(cmd->printer));
-	void const *reader = pgm_read_ptr_near(&(cmd->action.read));
+	cmd_action_t const *action = pgm_read_ptr_near(&(cmd->action));
+	void const *reader = pgm_read_ptr_near(&(action->read));
 
 	if (printer == NULL) {
 		const buflen_t pad = serial_pad(parse_pos);
@@ -164,7 +165,8 @@ static bool process_write(char *buf, buflen_t parse_pos)
 
 	// Collecting scanner and writer from PROGMEM storage
 	cmd_scan_t const *scanner = pgm_read_ptr_near(&(cmd->scanner));
-	void const *writer = pgm_read_ptr_near(&(cmd->action.write));
+	cmd_action_t const *action = pgm_read_ptr_near(&(cmd->action));
+	void const *writer = pgm_read_ptr_near(&(action->write));
 
 	if (scanner == NULL) {
 		const buflen_t pad = serial_pad(parse_pos);

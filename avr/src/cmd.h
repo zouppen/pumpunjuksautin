@@ -56,18 +56,18 @@ typedef struct {
 } cmd_action_t;
 
 typedef struct {
-	char const *name;     // ASCII command name, PROGMEM storage
-	cmd_action_t action;  // Read and write actions
-	cmd_print_t *printer; // Output formatter from raw value to ASCII. NULL if not readable.
-	cmd_scan_t *scanner;  // Input scanner from ASCII to raw value. NULL if not writable.
+	char const *name;           // ASCII command name, PROGMEM storage
+	cmd_action_t const *action; // Read and write actions
+	cmd_print_t *printer;       // Output formatter from raw value to ASCII. NULL if not readable.
+	cmd_scan_t *scanner;        // Input scanner from ASCII to raw value. NULL if not writable.
 } cmd_ascii_t;
 
 typedef struct {
-	modbus_object_t type;    // Object type, see definition
-	uint16_t addr;           // Modbus address
-	cmd_action_t action;     // Getter and setter
-	cmd_bin_read_t *reader;  // Modbus data reader
-	cmd_bin_write_t* writer; // Modbus data writer
+	modbus_object_t type;       // Object type, see definition
+	uint16_t addr;              // Modbus address
+	cmd_action_t const *action; // Getter and setter
+	cmd_bin_read_t *reader;     // Modbus data reader
+	cmd_bin_write_t* writer;    // Modbus data writer
 } cmd_modbus_t;
 
 // Typedefs for supported getters & setters

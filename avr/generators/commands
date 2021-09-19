@@ -4,14 +4,14 @@ is_null() {
     test "$1" = - -o "$1" = NULL
 }
 
-prototype() {
+intro() {
     echo "$1;" >&3
 }
 
-protos="`mktemp`"
+intros="`mktemp`"
 ascii="`mktemp`"
 modbus="`mktemp`"
-exec 3>"$protos"
+exec 3>"$intros"
 exec 4>"$ascii"
 exec 5>"$modbus"
 
@@ -41,49 +41,51 @@ while read objtype address name r_read r_write datatype; do
     if ! is_null "$r_read"; then
 	# Create prototype for getter to validate type safety on the way
 	fp_get="&$r_read"
-	prototype "get_${datatype}_t $r_read"
+	intro "get_${datatype}_t $r_read"
 
 	if ! is_null "$name"; then
 	    fp_printer="&cmd_print_$datatype"
-	    prototype "cmd_print_t cmd_print_$datatype"
+	    intro "cmd_print_t cmd_print_$datatype"
 	fi
 	if ! is_null "$objtype"; then
 	    fp_bin_read="&cmd_bin_read_$datatype"
-	    prototype "cmd_bin_read_t cmd_bin_read_$datatype"
+	    intro "cmd_bin_read_t cmd_bin_read_$datatype"
 	fi
     fi
 
     if ! is_null "$r_write"; then
 	# Create prototype for setter to validate type safety on the way
 	fp_set="&$r_write"
-	prototype "set_${datatype}_t $r_write"
+	intro "set_${datatype}_t $r_write"
 
 	if ! is_null "$name"; then
 	    fp_scanner="&cmd_scan_$datatype" 
-            prototype "cmd_scan_t cmd_scan_$datatype"
+            intro "cmd_scan_t cmd_scan_$datatype"
 	fi
 	if ! is_null "$objtype"; then
 	    fp_bin_write="&cmd_bin_write_$datatype"
-	    prototype "cmd_bin_write_t cmd_bin_write_$datatype"
+	    intro "cmd_bin_write_t cmd_bin_write_$datatype"
 	fi
     fi
+
+    # Invent name for action
+    test "$name" = - && act_name="act_${objtype}_$address" || act_name="act_$name"
+    intro "static cmd_action_t const $act_name PROGMEM = { $fp_get, $fp_set }"
     
     # Produce lines for both ASCII interface and Modbus
-    action="{ $fp_get, $fp_set }"
     if test "$name" != -; then
 	# PROGMEM strings must be outside of array initialization
-	echo "static char const name_$name[] PROGMEM = \"$name\";"
+	intro "static char const name_$name[] PROGMEM = \"$name\""
 	# The actual array item
-	echo "	{ name_$name, $action, $fp_printer, $fp_scanner }," >&4
+	echo "	{ name_$name, &$act_name, $fp_printer, $fp_scanner }," >&4
     fi
     if test "$objtype" != -; then
-	echo "	{`printf %2d  "$objtype"`, 0x`printf %04x "$address"`, $action, $fp_bin_read, $fp_bin_write}," >&5
+	echo "	{`printf %2d  "$objtype"`, 0x`printf %04x "$address"`, &$act_name, $fp_bin_read, $fp_bin_write}," >&5
     fi
 done
 
-# Prototypes. Only once per function.
-echo
-sort -u $protos
+# "Intro" lines. Only once per function.
+sort -u $intros
 
 # Ascii table header
 cat <<EOF
@@ -112,4 +114,4 @@ int const cmd_ascii_len = sizeof(cmd_ascii) / sizeof(*cmd_ascii);
 int const cmd_modbus_len = sizeof(cmd_modbus) / sizeof(*cmd_modbus);
 EOF
 
-rm "$protos" "$ascii" "$modbus"
+rm "$intros" "$ascii" "$modbus"
