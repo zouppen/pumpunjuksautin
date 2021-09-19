@@ -62,12 +62,12 @@ serial_set () {
 exec 3>&1
 {
     echo -n "Old " >&3
-    echo get time
+    echo get now
     sleep 0.2
     echo -n "Setting time... " >&3
     serial_set `get_all | bc`
     sleep 0.2
     echo -n "New " >&3
-    echo get time
+    echo get now
     sleep 0.2
 } | socat - "$1,cfmakeraw,b${2-9600}"

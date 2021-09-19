@@ -161,11 +161,10 @@ buflen_t cmd_print_int32(char *const buf_out, buflen_t count, void *getter)
 	return snprintf_P(buf_out, count, PSTR("%" PRId32), f());
 }
 
-// Formats time in UNIX epoch in ISO 8601 format with time zone
-buflen_t cmd_print_time(char *const buf_out, buflen_t count, void *getter)
+// Formats current time in ISO 8601 format with time zone
+buflen_t cmd_print_now(char *const buf_out, buflen_t count, void *_)
 {
-	get_int32_t *f = getter;
-	time_t now = f() - UNIX_OFFSET;
+	time_t now = time(NULL);
 	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
 	return wrote == 25 ? wrote-1 : OUT_OF_BUFFER;
 }
