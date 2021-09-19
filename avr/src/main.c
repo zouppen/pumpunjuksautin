@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "interface_ascii.h"
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -29,6 +27,8 @@
 #include "juksautin.h"
 #include "pin.h"
 #include "hardware_config.h"
+#include "interface_ascii.h"
+#include "interface_modbus.h"
 
 // Prototypes
 static void loop(void);
@@ -48,7 +48,7 @@ int main() {
 	juksautin_init();
 	adc_init();
 
-	// Set ADSC in ADCSRA (0x7A) to start the ADC conversion
+	// Start ADC loop by reading any channel
 	adc_start_sourcing(8);
 
 	// Enable global interrupts.
@@ -78,7 +78,8 @@ void loop(void) {
 	i++;
 
 	const bool overflow = len > SERIAL_RX_LEN;
-	const bool is_ascii = isalpha(*rx_buf);
+	// Modbus function code is never ASCII char so inferring from there if it's an ASCII request
+	const bool is_ascii = len >= 2 && isalpha(rx_buf[1]);
 	
 	if (overflow) {
 		serial_free_message();
@@ -94,7 +95,10 @@ void loop(void) {
 		serial_tx_line();
 	} else {
 		// Process Modbus message
-		// TODO Modbus parser. Meanwhile we stay silent.
+		buflen_t tx_len = interface_modbus(rx_buf, len);
 		serial_free_message();
+		if (tx_len != 0) {
+			serial_tx_bin(tx_len);
+		}
 	}
 }
