@@ -1,28 +1,11 @@
 #!/bin/sh -eu
 
-sort_and_append() {
-    # Sort outputs to make them searchable using bsearch(). Remove
-    # last comma.
-    sort "$1" | sed '$ s/,$//'
-}
-
 is_null() {
     test "$1" = - -o "$1" = NULL
 }
 
-pointerize() {
-    if is_null "$1"; then
-	echo -n NULL
-    else
-	# Output the function name with a prefix
-	echo -n "&${2-}$1"
-    fi
-}
-
 prototype() {
-    if ! is_null "$2"; then
-	echo "$1$2;" >&3
-    fi
+    echo "$1;" >&3
 }
 
 protos="`mktemp`"
@@ -46,32 +29,41 @@ EOF
 # Skip header line
 read foo
 
-while read type address name r_read r_write r_printer r_scanner; do
-    # Make functions pointers
-    fp_read="`pointerize "$r_read"`"
-    fp_write="`pointerize "$r_write"`"
-    fp_printer="`pointerize "$r_printer" cmd_print_`"
-    fp_scanner="`pointerize "$r_scanner" cmd_scan_`"
+while read objtype address name r_read r_write datatype; do
+    unset fp_read fp_write fp_printer fp_scanner
+    
+    if ! is_null "$r_read"; then
+	fp_read="&$r_read"
+	fp_printer="&cmd_print_$datatype"
 
-    # Create prototypes for functions in cmd_functions.c
-    prototype "cmd_print_t cmd_print_" "$r_printer"
-    prototype "cmd_scan_t cmd_scan_" "$r_scanner"
+	# Create prototype for print function
+	prototype "cmd_print_t cmd_print_$datatype"
 
-    # Create prototypes for getters and setters (to validate type
-    # safety on the way)
-    prototype "get_${r_printer}_t " "$r_read"
-    prototype "set_${r_scanner}_t " "$r_write"
+	# Create prototype for getter (to validate type safety on the way)
+	prototype "get_${datatype}_t $r_read"
+    fi
+
+    if ! is_null "$r_write"; then
+	fp_write="&$r_write"
+	fp_scanner="&cmd_scan_$datatype" 
+	
+	# Create prototype for write function
+        prototype "cmd_scan_t cmd_scan_$datatype"
+
+	# Create prototype for setter (to validate type safety on the way)
+	prototype "set_${datatype}_t $r_write"
+    fi
     
     # Produce lines for both ASCII interface and Modbus
-    action="{ $fp_read, $fp_write }"
+    action="{ ${fp_read-NULL}, ${fp_write-NULL} }"
     if test "$name" != -; then
 	# PROGMEM strings must be outside of array initialization
 	echo "static char const name_$name[] PROGMEM = \"$name\";"
 	# The actual array item
-	echo "	{ name_$name, $action, $fp_printer, $fp_scanner }," >&4
+	echo "	{ name_$name, $action, ${fp_printer-NULL}, ${fp_scanner-NULL} }," >&4
     fi
-    if test "$type" != -; then
-	echo "	{`printf %2d  "$type"`, 0x`printf %04x "$address"`, $action }," >&5
+    if test "$objtype" != -; then
+	echo "	{`printf %2d  "$objtype"`, 0x`printf %04x "$address"`, $action }," >&5
     fi
 done
 
@@ -86,7 +78,7 @@ cmd_ascii_t const cmd_ascii[] PROGMEM = {
 EOF
 
 # ASCII table content
-sort_and_append "$ascii"
+sort "$ascii"
 
 # Boilerplate between ASCII and Modbus tables
 cat <<EOF
@@ -96,7 +88,7 @@ cmd_modbus_t const cmd_modbus[] PROGMEM = {
 EOF
 
 # Modbus table content
-sort_and_append "$modbus"
+sort "$modbus"
 
 # Trailing content
 cat <<EOF
