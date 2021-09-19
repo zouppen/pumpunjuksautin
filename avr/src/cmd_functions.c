@@ -24,14 +24,9 @@
 #include "cmd.h"
 #include "pin.h"
 #include "hardware_config.h"
+#include "byteswap.h"
 
 const cmd_result_t cmd_scan_success = { 0, NULL, 0 };
-
-// Using GCC builtins for byte order swaps
-// https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
-#define bswap_16(x) __builtin_bswap16(x)
-#define bswap_32(x) __builtin_bswap32(x)
-#define bswap_64(x) __builtin_bswap64(x)
 
 // Functions are used by external commands via Modbus or ASCII command
 // interface, defined in file avr/commands.tsv.
