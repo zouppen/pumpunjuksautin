@@ -86,12 +86,8 @@ static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
 	void const *reader = pgm_read_ptr_near(&(cmd->action.read));
 
 	if (printer == NULL) {
-		char const *msg = reader == NULL
-			? PSTR("Not readable")
-			: PSTR("Readable via Modbus only!");
-
 		const buflen_t pad = serial_pad(parse_pos);
-		strlcpy_P(serial_tx + pad, msg, SERIAL_TX_LEN - pad);
+		strlcpy_P(serial_tx + pad, PSTR("Not readable"), SERIAL_TX_LEN - pad);
 		return false;
 	}
 
@@ -171,12 +167,8 @@ static bool process_write(char *buf, buflen_t parse_pos)
 	void const *writer = pgm_read_ptr_near(&(cmd->action.write));
 
 	if (scanner == NULL) {
-		char const *msg = writer == NULL
-			? PSTR("Not writable")
-			: PSTR("Writable via Modbus only!");
-
 		const buflen_t pad = serial_pad(parse_pos);
-		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, msg, name);
+		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, PSTR("Not writable"), name);
 		return false;
 	}
 
