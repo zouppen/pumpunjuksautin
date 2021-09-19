@@ -31,40 +31,53 @@ EOF
 read foo
 
 while read objtype address name r_read r_write datatype; do
-    unset fp_read fp_write fp_printer fp_scanner
+    fp_get=NULL
+    fp_set=NULL
+    fp_printer=NULL
+    fp_scanner=NULL
+    fp_bin_read=NULL
+    fp_bin_write=NULL
     
     if ! is_null "$r_read"; then
-	fp_read="&$r_read"
-	fp_printer="&cmd_print_$datatype"
-
-	# Create prototype for print function
-	prototype "cmd_print_t cmd_print_$datatype"
-
-	# Create prototype for getter (to validate type safety on the way)
+	# Create prototype for getter to validate type safety on the way
+	fp_get="&$r_read"
 	prototype "get_${datatype}_t $r_read"
+
+	if ! is_null "$name"; then
+	    fp_printer="&cmd_print_$datatype"
+	    prototype "cmd_print_t cmd_print_$datatype"
+	fi
+	if ! is_null "$objtype"; then
+	    fp_bin_read="&cmd_bin_read_$datatype"
+	    prototype "cmd_bin_read_t cmd_bin_read_$datatype"
+	fi
     fi
 
     if ! is_null "$r_write"; then
-	fp_write="&$r_write"
-	fp_scanner="&cmd_scan_$datatype" 
-	
-	# Create prototype for write function
-        prototype "cmd_scan_t cmd_scan_$datatype"
-
-	# Create prototype for setter (to validate type safety on the way)
+	# Create prototype for setter to validate type safety on the way
+	fp_set="&$r_write"
 	prototype "set_${datatype}_t $r_write"
+
+	if ! is_null "$name"; then
+	    fp_scanner="&cmd_scan_$datatype" 
+            prototype "cmd_scan_t cmd_scan_$datatype"
+	fi
+	if ! is_null "$objtype"; then
+	    fp_bin_write="&cmd_bin_write_$datatype"
+	    prototype "cmd_bin_write_t cmd_bin_write_$datatype"
+	fi
     fi
     
     # Produce lines for both ASCII interface and Modbus
-    action="{ ${fp_read-NULL}, ${fp_write-NULL} }"
+    action="{ $fp_get, $fp_set }"
     if test "$name" != -; then
 	# PROGMEM strings must be outside of array initialization
 	echo "static char const name_$name[] PROGMEM = \"$name\";"
 	# The actual array item
-	echo "	{ name_$name, $action, ${fp_printer-NULL}, ${fp_scanner-NULL} }," >&4
+	echo "	{ name_$name, $action, $fp_printer, $fp_scanner }," >&4
     fi
     if test "$objtype" != -; then
-	echo "	{`printf %2d  "$objtype"`, 0x`printf %04x "$address"`, $action }," >&5
+	echo "	{`printf %2d  "$objtype"`, 0x`printf %04x "$address"`, $action, $fp_bin_read, $fp_bin_write}," >&5
     fi
 done
 

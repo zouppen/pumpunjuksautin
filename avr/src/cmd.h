@@ -12,6 +12,12 @@ typedef struct {
 	uint32_t msg_arg1;     // First argument to the error msg
 } cmd_result_t;
 
+// Scan result. If error_msg == NULL it succeeded
+typedef struct {
+	modbus_status_t code;  // Error code or MODBUS_OK
+	buflen_t consumed;     // Bytes consumed
+} cmd_modbus_result_t;
+
 // Successful scan result. Defined in cmd_functions.c
 extern const cmd_result_t cmd_scan_success;
 
@@ -25,6 +31,15 @@ typedef cmd_result_t cmd_scan_t(char *const buf_in, void const *setter);
 // to write the output, remaining buffer length and getter function
 // where to receive the value to output.
 typedef buflen_t cmd_print_t(char *const buf_out, buflen_t count, void const *getter);
+
+// Modbus read command. It runs given getter function and produces
+// binary output with big endian byte order (mandated by Modbus).
+typedef cmd_modbus_result_t cmd_bin_read_t(char *const buf_out, buflen_t count, void *getter);
+
+// Modbus write command. It retrieves the data from input buffer,
+// changes endianness from big endian and passes the data to given
+// setter function.
+typedef cmd_modbus_result_t cmd_bin_write_t(char const *const buf_in, buflen_t count, void *setter);
 
 // Aliases. Scanners use scanf() which can parse unsigned numbers
 // correctly, no need to implement them twice.
@@ -48,9 +63,11 @@ typedef struct {
 } cmd_ascii_t;
 
 typedef struct {
-	modbus_object_t type; // Object type, see definition
-	uint16_t addr;        // Modbus address
-	cmd_action_t action;  // Read and write actions
+	modbus_object_t type;    // Object type, see definition
+	uint16_t addr;           // Modbus address
+	cmd_action_t action;     // Getter and setter
+	cmd_bin_read_t *reader;  // Modbus data reader
+	cmd_bin_write_t* writer; // Modbus data writer
 } cmd_modbus_t;
 
 // Typedefs for supported getters & setters
