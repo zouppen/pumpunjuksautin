@@ -1,5 +1,5 @@
 type	address	name	getter	setter	data_type
-4	10	led	juksautin_get_led	juksautin_set_led	bool
+4	10	led	misc_get_led	misc_set_led	bool
 4	0	time	clock_get_time_unix	clock_set_time_unix	uint32
 4	2	gmtoff	clock_get_gmtoff	clock_set_gmtoff	int32
 4	4	next_turn	clock_get_next_turn	clock_set_next_turn	uint32
@@ -10,5 +10,5 @@ type	address	name	getter	setter	data_type
 4	14	out	juksautin_take_outside_temp	-	uint16
 4	16	error	juksautin_take_error	-	uint16
 4	18	ratio	juksautin_take_ratio	-	uint16
--	-	version	cmd_version	-	string
--	-	now	cmd_now	-	string
+-	-	version	misc_version	-	string
+-	-	now	misc_now	-	string

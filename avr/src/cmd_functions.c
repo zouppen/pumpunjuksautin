@@ -45,9 +45,6 @@ const cmd_result_t cmd_scan_success = { 0, NULL, 0 };
 
 static char const *modbus_strerror(modbus_status_t e);
 
-// Version definition is delivered by version.cmake
-extern char const version[] PROGMEM;
-
 // Scans input for boolean values. Accepting true, false, 0, and 1.
 cmd_result_t cmd_scan_bool(char *const buf_in, void *setter)
 {
@@ -131,12 +128,6 @@ buflen_t cmd_print_bool(char *const buf_out, buflen_t count, void *getter)
 	return 1;
 }
 
-// Outputs version number.
-buflen_t cmd_version(char *const buf_out, buflen_t count)
-{
-	return strlcpy_P(buf_out, version, count);
-}
-
 // Gets and prints 16-bit signed integer in decimal format
 buflen_t cmd_print_int16(char *const buf_out, buflen_t count, void *getter)
 {
@@ -158,14 +149,6 @@ buflen_t cmd_print_string(char *const buf_out, buflen_t count, void *getter)
 	return f(buf_out, count);
 }
 
-// Formats current time in ISO 8601 format with time zone
-buflen_t cmd_now(char *const buf_out, buflen_t count)
-{
-	time_t now = time(NULL);
-	size_t wrote = strftime(buf_out, count, "%FT%T%z", localtime(&now));
-	return wrote == 25 ? wrote-1 : BUFLEN_MAX;
-}
-
 static char const *modbus_strerror(modbus_status_t e)
 {
 	switch (e) {
@@ -174,16 +157,4 @@ static char const *modbus_strerror(modbus_status_t e)
 	case MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE: return PSTR("Unrecoverable error");
 	default: return PSTR("Modbus error %d");
 	}
-}
-
-// Just writes PONG. For testing
-buflen_t cmd_pong(char *const buf_out, buflen_t count)
-{
-	if (count < 4) return BUFLEN_MAX;
-
-	buf_out[0] = 'P';
-	buf_out[1] = 'O';
-	buf_out[2] = 'N';
-	buf_out[3] = 'G';
-	return 4;
 }

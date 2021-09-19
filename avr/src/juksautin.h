@@ -37,9 +37,3 @@ uint16_t juksautin_take_outside_temp(void);
 
 // Get accumulator tank temperature
 uint16_t juksautin_take_accumulator_temp(void);
-
-// Reads indicator LED status
-bool juksautin_get_led(void);
-
-// Changes indicator LED status
-modbus_status_t juksautin_set_led(bool state);

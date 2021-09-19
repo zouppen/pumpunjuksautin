@@ -23,6 +23,7 @@ cat <<EOF
 #include "cmd.h"
 #include "juksautin.h"
 #include "clock.h"
+#include "misc.h"
 
 EOF
 
