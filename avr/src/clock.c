@@ -157,7 +157,7 @@ modbus_status_t clock_set_gmtoff_turn(int32_t gmtoff)
 	return MODBUS_OK;
 }
 
-int32_t clock_get_time_unix()
+time_t clock_get_time_unix()
 {
 	return time(NULL) + UNIX_OFFSET;
 }
@@ -174,7 +174,7 @@ uint32_t clock_get_next_turn()
 	return eeprom_read_dword(&ee_ts_turn);
 }
 
-uint32_t clock_get_gmtoff_turn()
+int32_t clock_get_gmtoff_turn()
 {
 	return eeprom_read_dword(&ee_zone_turn);
 }

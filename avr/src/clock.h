@@ -45,7 +45,7 @@ modbus_status_t clock_set_next_turn(uint32_t ts);
 modbus_status_t clock_set_gmtoff_turn(int32_t gmtoff);
 
 // Reads current time as UNIX timestamp
-int32_t clock_get_time_unix(void);
+time_t clock_get_time_unix(void);
 
 // Get currently observed UTC offset (time zone with DST adjustment,
 // if any). May be different than the one set by clock_set_gmtoff() if
@@ -56,7 +56,7 @@ int32_t clock_get_gmtoff(void);
 uint32_t clock_get_next_turn(void);
 
 // Read next clock turn timestamp
-uint32_t clock_get_gmtoff_turn();
+int32_t clock_get_gmtoff_turn();
 
 // Arm timer for interrupt TIMER2_COMPB_vect. Timeout unit is
 // prescaler / F_CPU = 16µs and maximum delay of prescaler * COUNT_A /
