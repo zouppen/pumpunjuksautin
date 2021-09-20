@@ -16,8 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <stdio.h>
-
+#include <string.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 #include <stddef.h>
@@ -37,18 +36,21 @@ static cmd_modbus_t const *find_cmd(modbus_object_t type, uint16_t addr);
 static int cmd_comparator(const void *key_void, const void *item_void);
 static function_handler_t *find_function_handler(uint8_t const code);
 static int handler_comparator(const void *key_void, const void *item_void);
+static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *buf_in, buflen_t const len);
 static buflen_t fill_exception(modbus_status_t status);
+static cmd_modbus_result_t wrap_exception(modbus_status_t status);
 static uint16_t modbus_crc(char const *buf, buflen_t len);
 static function_handler_t read_registers;
+static function_handler_t write_register;
 
 // Keep this list numerically sorted
 static handler_t const handlers[] PROGMEM = {
 	{ 0x03, &read_registers},
 	{ 0x04, &read_registers},
+	{ 0x06, &write_register},
 	// 1
 	// 5
 	// 15
-	// 6
 	// 16
 	// 17	
 };
@@ -144,14 +146,55 @@ static buflen_t read_registers(char const *buf, buflen_t len)
 	return tx_header_len + 2*registers;
 }
 
+static buflen_t write_register(char const *buf, buflen_t len)
+{
+	// Single register write has constant length
+	if (len != 4) {
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+	}
+
+	// Response payload is identical to the request
+	memcpy(serial_tx+2, buf, 4);
+
+	// Getting address and running write once
+	uint16_t addr = bswap_16(*(uint16_t*)buf);
+	cmd_modbus_result_t r = try_register_write(addr, buf+2, 2);
+	if (r.consumed == 0) {
+		return fill_exception(r.code);
+	} else {
+		return r.consumed + 4;
+	}
+}
+
+static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *buf_in, buflen_t const len)
+{
+	// Find command responsible of this address
+	cmd_modbus_t const *cmd = find_cmd(HOLDING_REGISTER, addr);
+	if (cmd == NULL) {
+		// Command not found
+		return wrap_exception(MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+	}
+
+	cmd_bin_write_t const *writer = pgm_read_ptr_near(&(cmd->writer));
+	cmd_action_t const *action = pgm_read_ptr_near(&(cmd->action));
+	void const *setter = pgm_read_ptr_near(&(action->write));
+	if (writer == NULL) {
+		// Not readable
+		return wrap_exception(MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+	}
+
+	// Finally we can do the actual action.
+	return writer(buf_in, len, setter);
+}
+
 uint8_t modbus_get_station_id(void)
 {
 	// TODO EEPROM storage
 	return 1;
 }
 
-#if SERIAL_TX_LEN < 5
-#error Modbus exceptions require longer serial tx buffer
+#if SERIAL_TX_LEN < 8
+#error Modbus exceptions and typical answers require longer serial tx buffer
 #endif
 
 static buflen_t fill_exception(modbus_status_t status)
@@ -159,6 +202,13 @@ static buflen_t fill_exception(modbus_status_t status)
 	serial_tx[1] |= 0x80;
 	serial_tx[2] = status;
 	return 3;
+}
+
+static cmd_modbus_result_t wrap_exception(modbus_status_t status)
+{
+	// Pass the result and report no data consumed
+	cmd_modbus_result_t a = { status, 0};
+	return a;
 }
 
 // Calculate CRC from given buffer
