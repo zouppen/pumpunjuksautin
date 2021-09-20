@@ -42,16 +42,17 @@ static cmd_modbus_result_t wrap_exception(modbus_status_t status);
 static uint16_t modbus_crc(char const *buf, buflen_t len);
 static function_handler_t read_registers;
 static function_handler_t write_register;
+static function_handler_t write_registers;
 
 // Keep this list numerically sorted
 static handler_t const handlers[] PROGMEM = {
 	{ 0x03, &read_registers},
 	{ 0x04, &read_registers},
 	{ 0x06, &write_register},
+	{ 0x10, &write_registers},
 	// 1
 	// 5
 	// 15
-	// 16
 	// 17	
 };
 
@@ -165,6 +166,46 @@ static buflen_t write_register(char const *buf, buflen_t len)
 	} else {
 		return 6;
 	}
+}
+
+// Write many holding registers (function code 16)
+static buflen_t write_registers(char const *buf, buflen_t len)
+{
+	// There are 5 bytes minimum after the function code
+	buflen_t const tx_header_len = 5;
+
+	if (len < tx_header_len) {
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+	}
+
+	// Response payload has the same boilerplate but only 4 bytes
+	// (byte count is left out)
+	memcpy(serial_tx+2, buf, 4);
+
+	// Collect base address and bytes but ignore number of
+	// registers (indices 2 and 3). It is redundant information.
+	uint16_t const base_addr = bswap_16(*(uint16_t*)buf);
+	buflen_t const bytes = buf[4];
+
+	// Make sure all input data is there
+	if (tx_header_len + bytes != len) {
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+	}
+	
+	// Start with base address and iterate until everything is got.
+	for (buflen_t i=0; i < bytes; ) {
+		cmd_modbus_result_t r = try_register_write(base_addr+i/2, buf+tx_header_len+i, bytes-i);
+		if (r.code != MODBUS_OK) {
+			return fill_exception(r.code);
+		}
+		if ((r.consumed & 1) != 0) {
+			// If the amount is not aligned to register
+			// width then something is bad.
+			return fill_exception(MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE);
+		}
+		i += r.consumed;
+	}
+	return 6;
 }
 
 static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *buf_in, buflen_t const len)
