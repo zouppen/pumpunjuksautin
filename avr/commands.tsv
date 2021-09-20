@@ -6,9 +6,9 @@ type	address	name	getter	setter	data_type
 4	6	gmtoff_turn	clock_get_gmtoff_turn	clock_set_gmtoff_turn	int32
 4	8	target	juksautin_get_target	juksautin_set_target	uint16
 4	10	k5_raw	juksautin_take_k5_raw_mv	-	uint16
-4	12	accu	juksautin_take_accumulator_temp	-	uint16
-4	14	out	juksautin_take_outside_temp	-	uint16
-4	16	error	juksautin_take_error	-	uint16
-4	18	ratio	juksautin_take_ratio	-	uint16
+4	11	accu	juksautin_take_accumulator_temp	-	uint16
+4	12	out	juksautin_take_outside_temp	-	uint16
+4	13	error	juksautin_take_error	-	uint16
+4	14	ratio	juksautin_take_ratio	-	uint16
 -	-	version	misc_version	-	string
 -	-	now	misc_now	-	string
