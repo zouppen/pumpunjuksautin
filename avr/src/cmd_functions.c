@@ -191,7 +191,7 @@ cmd_modbus_result_t cmd_bin_write_int32(char const *const buf_in, buflen_t count
 	if (count < sizeof(int32_t)) return modbus_unaligned();
 
 	// Get value from big-endian format
-	int16_t val = bswap_32(*(int32_t*)buf_in);
+	int32_t val = bswap_32(*(int32_t*)buf_in);
 
 	// Pass it on setter
 	set_int32_t *f = setter;
