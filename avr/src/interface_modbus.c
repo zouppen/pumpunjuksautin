@@ -160,10 +160,10 @@ static buflen_t write_register(char const *buf, buflen_t len)
 	// Getting address and running write once
 	uint16_t addr = bswap_16(*(uint16_t*)buf);
 	cmd_modbus_result_t r = try_register_write(addr, buf+2, 2);
-	if (r.consumed == 0) {
+	if (r.code != MODBUS_OK) {
 		return fill_exception(r.code);
 	} else {
-		return r.consumed + 4;
+		return 6;
 	}
 }
 
