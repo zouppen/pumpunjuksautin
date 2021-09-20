@@ -54,10 +54,10 @@ endif()
 set(PROG_TYPE usbasp CACHE STRING "Programmer type in avrdude")
 
 # AVR Fuses, must be in concordance with your hardware and F_CPU
-# http://eleccelerator.com/fusecalc/fusecalc.php?chip=atmega328p
-set(E_FUSE 0xfd)
-set(H_FUSE 0xde)
+# http://eleccelerator.com/fusecalc/fusecalc.php?chip=atmega328p&LOW=FF&HIGH=DE&EXTENDED=FD&LOCKBIT=FF
 set(L_FUSE 0xff)
+set(H_FUSE 0xde)
+set(E_FUSE 0xfd)
 set(LOCK_BIT 0xff)
 
 # Use AVR GCC toolchain
