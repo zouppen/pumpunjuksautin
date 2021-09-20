@@ -129,23 +129,24 @@ static buflen_t read_registers(char const *buf, buflen_t len)
 		}
 
 		// Actual filling of data
-		cmd_modbus_result_t res = reader(serial_tx+tx_header_len+2*i, 2*(registers-i), getter);
-		if (res.code != MODBUS_OK) {
+		cmd_modbus_result_t r = reader(serial_tx+tx_header_len+2*i, 2*(registers-i), getter);
+		if (r.code != MODBUS_OK) {
 			// Passing error
-			return fill_exception(res.code);
+			return fill_exception(r.code);
 		}
-		if ((res.consumed & 1) != 0) {
+		if ((r.consumed & 1) != 0) {
 			// If the amount is not aligned to register
-			// width then something is bad
+			// width then something is bad.
 			return fill_exception(MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE);
 		}
 
-		i += res.consumed / 2;
+		i += r.consumed / 2;
 	}
 
 	return tx_header_len + 2*registers;
 }
 
+// Write a single holding registers (function code 16)
 static buflen_t write_register(char const *buf, buflen_t len)
 {
 	// Single register write has constant length
