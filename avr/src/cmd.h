@@ -46,13 +46,15 @@ typedef cmd_modbus_result_t cmd_bin_write_t(char const *const buf_in, buflen_t c
 #define cmd_scan_uint16 cmd_scan_int16
 #define cmd_scan_uint32 cmd_scan_int32
 
-// Modbus aliases. In there signed and unsigned are the same basically.
-#define cmd_bin_read_uint16 cmd_bin_read_int16
-#define cmd_bin_read_uint32 cmd_bin_read_int32
-
 // We really would need unsigned printers separately, but TODO
 #define cmd_print_uint16 cmd_print_int16
 #define cmd_print_uint32 cmd_print_int32
+
+// Modbus aliases. In there signed and unsigned are the same basically.
+#define cmd_bin_read_uint16 cmd_bin_read_int16
+#define cmd_bin_read_uint32 cmd_bin_read_int32
+#define cmd_bin_write_uint16 cmd_bin_write_int16
+#define cmd_bin_write_uint32 cmd_bin_write_int32
 
 typedef struct {
 	void *read;           // NULL if not readable
