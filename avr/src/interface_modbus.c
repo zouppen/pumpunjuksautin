@@ -91,13 +91,57 @@ static int handler_comparator(const void *key_void, const void *item_void)
 
 static buflen_t read_registers(char const *buf, buflen_t len)
 {
-	// TODO placeholder
-	serial_tx[2] = 'k';
-	serial_tx[3] = 'i';
-	serial_tx[4] = 's';
-	serial_tx[5] = 's';
-	serial_tx[6] = 'a';
-	return 7;
+	// Command type is already populated in the tx buffer, digging
+	// it from there.
+	modbus_object_t const type = serial_tx[1];
+	buflen_t const tx_header_len = 3;
+
+	if (len != 4) {
+		return fill_exception(type, MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+	}
+
+	// Parse rest of the packet
+	uint16_t base_addr = bswap_16(*(uint16_t*)buf);
+	uint16_t registers = bswap_16(*(uint16_t*)(buf+2));
+	if (registers > (SERIAL_TX_LEN-tx_header_len) / 2) {
+		// Wouldn't fit to the output buffer
+		return fill_exception(type, MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE);
+	}
+	serial_tx[2] = 2*registers;
+
+	// Start the actual retrieval process
+	for (uint16_t i = 0; i < registers; ) {
+		// Retrieve suitable handler, if any
+		cmd_modbus_t const *cmd = find_cmd(type, base_addr+i);
+		if (cmd == NULL) {
+			return fill_exception(type, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+		}
+
+		// Retrieving data from PROGMEM
+		cmd_bin_read_t const *reader = pgm_read_ptr_near(&(cmd->reader));
+		cmd_action_t const *action = pgm_read_ptr_near(&(cmd->action));
+		void const *getter = pgm_read_ptr_near(&(action->read));
+		if (reader == NULL) {
+			// Not readable
+			return fill_exception(type, MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+		}
+
+		// Actual filling of data
+		cmd_modbus_result_t res = reader(serial_tx+tx_header_len+2*i, 2*(registers-i), getter);
+		if (res.code != MODBUS_OK) {
+			// Passing error
+			return fill_exception(type, res.code);
+		}
+		if ((res.consumed & 1) != 0) {
+			// If the amount is not aligned to register
+			// width then something is bad
+			return fill_exception(type, MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE);
+		}
+
+		i += res.consumed / 2;
+	}
+
+	return tx_header_len + 2*registers;
 }
 
 uint8_t modbus_get_station_id(void)
