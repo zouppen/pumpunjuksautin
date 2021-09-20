@@ -91,9 +91,9 @@ static int handler_comparator(const void *key_void, const void *item_void)
 
 static buflen_t read_registers(char const *buf, buflen_t len)
 {
-	// Command type is already populated in the tx buffer, digging
-	// it from there.
-	modbus_object_t const type = serial_tx[1];
+	// Command type is already populated in the tx
+	// buffer. Determining the correct command type from there.
+	modbus_object_t const type = serial_tx[1] == 3 ? HOLDING_REGISTER : INPUT_REGISTER;
 	buflen_t const tx_header_len = 3;
 
 	if (len != 4) {
