@@ -34,17 +34,21 @@ typedef buflen_t cmd_print_t(char *const buf_out, buflen_t count, void const *ge
 
 // Modbus read command. It runs given getter function and produces
 // binary output with big endian byte order (mandated by Modbus).
-typedef cmd_modbus_result_t cmd_bin_read_t(char *const buf_out, buflen_t count, void *getter);
+typedef cmd_modbus_result_t cmd_bin_read_t(char *const buf_out, buflen_t count, void const *getter);
 
 // Modbus write command. It retrieves the data from input buffer,
 // changes endianness from big endian and passes the data to given
 // setter function.
-typedef cmd_modbus_result_t cmd_bin_write_t(char const *const buf_in, buflen_t count, void *setter);
+typedef cmd_modbus_result_t cmd_bin_write_t(char const *const buf_in, buflen_t count, void const *setter);
 
 // Aliases. Scanners use scanf() which can parse unsigned numbers
 // correctly, no need to implement them twice.
 #define cmd_scan_uint16 cmd_scan_int16
 #define cmd_scan_uint32 cmd_scan_int32
+
+// Modbus aliases. In there signed and unsigned are the same basically.
+#define cmd_bin_read_uint16 cmd_bin_read_int16
+#define cmd_bin_read_uint32 cmd_bin_read_int32
 
 // We really would need unsigned printers separately, but TODO
 #define cmd_print_uint16 cmd_print_int16

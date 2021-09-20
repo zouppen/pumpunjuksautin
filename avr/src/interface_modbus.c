@@ -39,11 +39,12 @@ static function_handler_t *find_function_handler(uint8_t const code);
 static int handler_comparator(const void *key_void, const void *item_void);
 static buflen_t fill_exception(uint8_t function_code, modbus_status_t status);
 static uint16_t modbus_crc(char const *buf, buflen_t len);
-static function_handler_t read_input_registers;
+static function_handler_t read_registers;
 
 // Keep this list numerically sorted
 static handler_t const handlers[] PROGMEM = {
-	{ 4, &read_input_registers}
+	{ 0x03, &read_registers},
+	{ 0x04, &read_registers},
 	// 1
 	// 5
 	// 15
@@ -88,7 +89,7 @@ static int handler_comparator(const void *key_void, const void *item_void)
 	return memcmp_P(key, item_P, offsetof(handler_t, f));
 }
 
-static buflen_t read_input_registers(char const *buf, buflen_t len)
+static buflen_t read_registers(char const *buf, buflen_t len)
 {
 	// TODO placeholder
 	serial_tx[2] = 'k';
@@ -156,7 +157,7 @@ buflen_t interface_modbus(char *buf, buflen_t len)
 		// Illegal function. Producing reply packet
 		ret = fill_exception(function_code, MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
 	} else {
-		ret = f(buf+1, len-1);
+		ret = f(buf+2, len-2);
 		if (ret+2 > SERIAL_TX_LEN) {
 			// Cannot fit CRC
 			ret = fill_exception(function_code, MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE);
@@ -168,11 +169,3 @@ buflen_t interface_modbus(char *buf, buflen_t len)
 	*(uint16_t*)(serial_tx+ret) = crc_out;
 	return ret + 2;
 }
-
-
-//	uint16_t address = bswap_16(*(uint16_t*)(buf+2));
-	
-	// TODO now we just print how it went
-//	snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("%d / %d"), crc_correct, crc);
-//	return true;*/
-
