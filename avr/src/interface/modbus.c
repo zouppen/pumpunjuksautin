@@ -40,17 +40,18 @@ static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *b
 static buflen_t fill_exception(modbus_status_t status);
 static cmd_modbus_result_t wrap_exception(modbus_status_t status);
 static uint16_t modbus_crc(char const *buf, buflen_t len);
+static function_handler_t read_bits;
 static function_handler_t read_registers;
 static function_handler_t write_register;
 static function_handler_t write_registers;
 
 // Keep this list numerically sorted
 static handler_t const handlers[] PROGMEM = {
+	{ 0x01, &read_bits},
 	{ 0x03, &read_registers},
 	{ 0x04, &read_registers},
 	{ 0x06, &write_register},
 	{ 0x10, &write_registers},
-	// 1
 	// 5
 	// 15
 	// 17	
@@ -90,6 +91,59 @@ static int handler_comparator(const void *key_void, const void *item_void)
 	uint8_t const *key = key_void;
 	handler_t const *item_P = item_void;
 	return memcmp_P(key, item_P, offsetof(handler_t, f));
+}
+
+static buflen_t read_bits(char const *buf, buflen_t len)
+{
+	buflen_t const tx_header_len = 3;
+
+	if (len != 4) {
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+	}
+
+	// Parse the packet.
+	uint16_t const base_addr = bswap_16(*(uint16_t*)buf);
+	uint16_t const bits = bswap_16(*(uint16_t*)(buf+2));
+
+	// Round number of bits up to the next byte. In Haskell, the
+	// equivalent series would be [(x, (x+7) `div` 8) | x <- [0..]]
+	uint16_t const bytes = (bits+7) / 8;
+
+	if (bytes > SERIAL_TX_LEN - tx_header_len) {
+		// Wouldn't fit to the output buffer
+		return fill_exception(MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE);
+	}		
+	
+	// Populate response. Clean the payload bits for easier
+	// bitwise operations.
+	serial_tx[2] = bytes;
+	memset(serial_tx+3, 0, bytes);
+	
+	// Start the actual retrieval process
+	for (uint16_t i = 0; i < bits; i++) {
+		// Retrieve suitable handler, if any
+		cmd_modbus_t const *cmd = find_cmd(COIL, base_addr+i);
+		if (cmd == NULL) {
+			return fill_exception(MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+		}
+
+		// Retrieving data from PROGMEM. Bit operatios have no reader.
+		cmd_action_t const *action = pgm_read_ptr_near(&(cmd->action));
+		void const *getter = pgm_read_ptr_near(&(action->read));
+		if (getter == NULL) {
+			// Not readable
+			return fill_exception(MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+		}
+
+		// Actual filling of data
+		get_bool_t *f = getter;
+		if (f()) {
+			// Bit is set
+			serial_tx[tx_header_len + (i >> 3)] |= _BV(i & 0b111);
+		}
+	}
+
+	return tx_header_len + bytes;;
 }
 
 static buflen_t read_registers(char const *buf, buflen_t len)
