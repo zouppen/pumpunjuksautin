@@ -80,7 +80,7 @@ while read objtype address name r_read r_write datatype; do
 	echo "	{ name_$name, &$act_name, $fp_printer, $fp_scanner }," >&4
     fi
     if test "$objtype" != -; then
-	echo "	{`printf %2d  "$objtype"`, 0x`printf %04x "$address"`, &$act_name, $fp_bin_read, $fp_bin_write}," >&5
+	echo "	{`printf \'%c\'  "$objtype"`, 0x`printf %04x "$address"`, &$act_name, $fp_bin_read, $fp_bin_write}," >&5
     fi
 done
 

@@ -4,10 +4,10 @@
 // values etc.
 
 typedef enum {
-	COIL = 0,
-	DISCRETE_INPUT = 1,
-	INPUT_REGISTER = 3,
-	HOLDING_REGISTER = 4
+	COIL = 'c',
+	DISCRETE_INPUT = 'd',
+	INPUT_REGISTER = 'i',
+	HOLDING_REGISTER = 'h',
 } modbus_object_t;
 
 // The codes match Modbus exception responses.
