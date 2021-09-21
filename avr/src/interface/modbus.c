@@ -36,12 +36,14 @@ static cmd_modbus_t const *find_cmd(modbus_object_t type, uint16_t addr);
 static int cmd_comparator(const void *key_void, const void *item_void);
 static function_handler_t *find_function_handler(uint8_t const code);
 static int handler_comparator(const void *key_void, const void *item_void);
+static modbus_status_t try_bit_write(uint16_t const addr, bool const value);
 static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *buf_in, buflen_t const len);
 static buflen_t fill_exception(modbus_status_t status);
 static cmd_modbus_result_t wrap_exception(modbus_status_t status);
 static uint16_t modbus_crc(char const *buf, buflen_t len);
 static function_handler_t read_bits;
 static function_handler_t read_registers;
+static function_handler_t write_bit;
 static function_handler_t write_register;
 static function_handler_t write_registers;
 
@@ -51,9 +53,9 @@ static handler_t const handlers[] PROGMEM = {
 	{ 0x02, &read_bits},
 	{ 0x03, &read_registers},
 	{ 0x04, &read_registers},
+	{ 0x05, &write_bit},
 	{ 0x06, &write_register},
 	{ 0x10, &write_registers},
-	// 5
 	// 15
 	// 17	
 };
@@ -208,6 +210,51 @@ static buflen_t read_registers(char const *buf, buflen_t len)
 	}
 
 	return tx_header_len + 2*registers;
+}
+
+// Write bit i.e. force a single coil (function code 0x05)
+static buflen_t write_bit(char const *buf, buflen_t len)
+{
+	// We have constant length
+	if (len != 4) {
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+	}
+
+	// Response payload is identical to the request
+	memcpy(serial_tx+2, buf, 4);
+
+	// Getting address
+	uint16_t const addr = bswap_16(*(uint16_t*)buf);
+	bool const value = buf[2];
+
+	// Retrieve suitable handler, if any
+	modbus_status_t const code = try_bit_write(addr, value);
+	if (code != MODBUS_OK) {
+		return fill_exception(code);
+	} else {
+		return 6;
+	}
+}
+
+// Helper for writing a bit to given address
+modbus_status_t try_bit_write(uint16_t const addr, bool const value) {
+	// Retrieve suitable handler, if any
+	cmd_modbus_t const *cmd = find_cmd(COIL, addr);
+	if (cmd == NULL) {
+		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
+	}
+
+	// Retrieving data from PROGMEM. Bit operatios have no reader.
+	cmd_action_t const *action = pgm_read_ptr_near(&(cmd->action));
+	void const *setter = pgm_read_ptr_near(&(action->write));
+	if (setter == NULL) {
+		// Not writable
+		return MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
+	}
+
+	// Actual write operation
+	set_bool_t *f = setter;
+	return f(value);
 }
 
 // Write a single holding register (function code 0x06)
