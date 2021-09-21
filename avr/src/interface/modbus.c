@@ -44,6 +44,7 @@ static uint16_t modbus_crc(char const *buf, buflen_t len);
 static function_handler_t read_bits;
 static function_handler_t read_registers;
 static function_handler_t write_bit;
+static function_handler_t write_bits;
 static function_handler_t write_register;
 static function_handler_t write_registers;
 
@@ -55,9 +56,8 @@ static handler_t const handlers[] PROGMEM = {
 	{ 0x04, &read_registers},
 	{ 0x05, &write_bit},
 	{ 0x06, &write_register},
+	{ 0x0F, &write_bits},
 	{ 0x10, &write_registers},
-	// 15
-	// 17	
 };
 
 // Search given command from the table generated to cmd.c
@@ -234,6 +234,53 @@ static buflen_t write_bit(char const *buf, buflen_t len)
 	} else {
 		return 6;
 	}
+}
+
+// Write bits i.e. force a multiple coils (function code 0x0F)
+static buflen_t write_bits(char const *buf, buflen_t len)
+{
+	// There are 5 bytes minimum after the function code
+	buflen_t const input_header_len = 5;
+
+	if (len < input_header_len) {
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+	}
+
+	// Response payload is identical to the request
+	memcpy(serial_tx+2, buf, 4);
+
+	// Getting address
+	uint16_t const addr = bswap_16(*(uint16_t*)buf);
+	uint16_t const bits = bswap_16(*(uint16_t*)(buf+2));
+
+	// Round number of bits up to the next byte. In Haskell, the
+	// equivalent series would be [(x, (x+7) `div` 8) | x <- [0..]]
+	uint16_t const bytes = (bits+7) / 8;
+
+	if (bytes != buf[4]) {
+		// Inconsistent request. Byte counter doens't match
+		// calculated one.
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+	}
+
+	if (bytes != len - input_header_len) {
+		// Inconsistent request. Data too short
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
+	}
+
+	// Setting bits
+	for (int i=0; i<bits; i++) {
+		buflen_t const byte_pos = i >> 3;
+		buflen_t const bitmask = _BV(i & 0b111);
+
+		bool const value = buf[input_header_len + byte_pos] & bitmask;
+		modbus_status_t code = try_bit_write(addr+i, value);
+
+		if (code != MODBUS_OK) {
+			return fill_exception(code);
+		}
+	}
+	return 6;
 }
 
 // Helper for writing a bit to given address
