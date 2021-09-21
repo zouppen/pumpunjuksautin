@@ -48,6 +48,7 @@ static function_handler_t write_registers;
 // Keep this list numerically sorted
 static handler_t const handlers[] PROGMEM = {
 	{ 0x01, &read_bits},
+	{ 0x02, &read_bits},
 	{ 0x03, &read_registers},
 	{ 0x04, &read_registers},
 	{ 0x06, &write_register},
@@ -95,6 +96,10 @@ static int handler_comparator(const void *key_void, const void *item_void)
 
 static buflen_t read_bits(char const *buf, buflen_t len)
 {
+	// Command type is already populated in the tx
+	// buffer. Determining the correct command type from there.
+	modbus_object_t const type = serial_tx[1] == 1 ? COIL : DISCRETE_INPUT;
+	
 	buflen_t const tx_header_len = 3;
 
 	if (len != 4) {
@@ -122,7 +127,7 @@ static buflen_t read_bits(char const *buf, buflen_t len)
 	// Start the actual retrieval process
 	for (uint16_t i = 0; i < bits; i++) {
 		// Retrieve suitable handler, if any
-		cmd_modbus_t const *cmd = find_cmd(COIL, base_addr+i);
+		cmd_modbus_t const *cmd = find_cmd(type, base_addr+i);
 		if (cmd == NULL) {
 			return fill_exception(MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS);
 		}
