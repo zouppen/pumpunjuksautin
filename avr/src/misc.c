@@ -25,6 +25,9 @@
 // Version definition is delivered by version.cmake
 extern char const version[] PROGMEM;
 
+// Holds the value for a dummy coil
+static bool dummy_coil = false;
+
 buflen_t misc_version(char *const buf_out, buflen_t count)
 {
 	return strlcpy_P(buf_out, version, count);
@@ -61,4 +64,15 @@ buflen_t misc_pong(char *const buf_out, buflen_t count)
 	buf_out[2] = 'N';
 	buf_out[3] = 'G';
 	return 4;
+}
+
+bool misc_get_dummy_coil()
+{
+	return dummy_coil;
+}
+
+modbus_status_t misc_set_dummy_coil(bool state)
+{
+	dummy_coil = state;
+	return MODBUS_OK;
 }

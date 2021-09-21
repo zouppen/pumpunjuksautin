@@ -19,3 +19,9 @@ modbus_status_t misc_set_led(bool state);
 
 // Just writes PONG. For testing,
 buflen_t misc_pong(char *const buf_out, buflen_t count);
+
+// Gets dummy coil value. Used for testing.
+bool misc_get_dummy_coil();
+
+// Sets dummy coil value. Used for testing.
+modbus_status_t misc_set_dummy_coil(bool state);
