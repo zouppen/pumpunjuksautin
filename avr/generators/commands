@@ -47,7 +47,8 @@ while read objtype address name r_read r_write datatype; do
 	    fp_printer="&cmd_print_$datatype"
 	    intro "cmd_print_t cmd_print_$datatype"
 	fi
-	if ! is_null "$objtype"; then
+	if ! is_null "$objtype" && test $datatype != 'bool'; then
+	    # Object type means it's on Modbus. Booleans have no reader.
 	    fp_bin_read="&cmd_bin_read_$datatype"
 	    intro "cmd_bin_read_t cmd_bin_read_$datatype"
 	fi
@@ -62,7 +63,8 @@ while read objtype address name r_read r_write datatype; do
 	    fp_scanner="&cmd_scan_$datatype" 
             intro "cmd_scan_t cmd_scan_$datatype"
 	fi
-	if ! is_null "$objtype"; then
+	if ! is_null "$objtype" && test $datatype != 'bool'; then
+	    # Object type means it's on Modbus. Booleans have no writer.
 	    fp_bin_write="&cmd_bin_write_$datatype"
 	    intro "cmd_bin_write_t cmd_bin_write_$datatype"
 	fi

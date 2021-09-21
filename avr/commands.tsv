@@ -1,5 +1,6 @@
 type	address	name	getter	setter	data_type
--	-	led	misc_get_led	misc_set_led	bool
+c	0	led	misc_get_led	misc_set_led	bool
+c	1	dummy	misc_get_dummy_coil	misc_set_dummy_coil	bool
 h	0	time	clock_get_time_unix	clock_set_time_unix	uint32
 h	2	gmtoff	clock_get_gmtoff	clock_set_gmtoff	int32
 h	4	next_turn	clock_get_next_turn	clock_set_next_turn	uint32
