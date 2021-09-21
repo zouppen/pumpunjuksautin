@@ -78,27 +78,32 @@ void loop(void) {
 	i++;
 
 	const bool overflow = len > SERIAL_RX_LEN;
-	// Modbus function code is never ASCII char so inferring from there if it's an ASCII request
+	// Modbus function code is never an ASCII letter so it can be
+	// used to check if the message is textual.
 	const bool is_ascii = len >= 2 && isalpha(rx_buf[1]);
+	const bool ascii_allowed = WITH_ASCII && (!WITH_MODBUS || is_ascii);
 	
 	if (overflow) {
 		serial_free_message();
-		// Message cut short. Answer to it only if it has ASCII content.
-		if (is_ascii) {
+		// Be silent about the error if there's a risk of
+		// shouting over another client.
+		if (ascii_allowed) {
 			snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("Incoming message longer than %d bytes"), SERIAL_RX_LEN);
 			serial_tx_line();
 		}
-	} else if (is_ascii) {
+	} else if (ascii_allowed) {
 		// Process ASCII message
 		interface_ascii(rx_buf, len);
 		serial_free_message();
 		serial_tx_line();
-	} else {
+	} else if (WITH_MODBUS) {
 		// Process Modbus message
 		buflen_t tx_len = interface_modbus(rx_buf, len);
 		serial_free_message();
 		if (tx_len != 0) {
 			serial_tx_bin(tx_len);
 		}
+	} else {
+		serial_free_message();
 	}
 }

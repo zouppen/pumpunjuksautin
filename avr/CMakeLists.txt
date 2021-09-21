@@ -32,6 +32,10 @@ set(CLOCK_PRESCALER 256 CACHE STRING "Clock prescaler for TIMER2")
 # Default Baudrate for UART, read avr include/util/setbaud.h for usage
 set(BAUD 9600 CACHE STRING "Serial port baud rate")
 
+# Build options
+set(WITH_MODBUS ON CACHE BOOL "Enable Modbus client support")
+set(WITH_ASCII ON CACHE BOOL "Enable ASCII point-to-point-protocol")
+
 message(STATUS "${MCU} running at ${F_CPU} Hz")
 
 # Sanity check to make sure the clock ticks once per second.
@@ -74,7 +78,12 @@ add_definitions(
     -DCLOCK_PRESCALER=${CLOCK_PRESCALER}
     -DBAUD=${BAUD}
     -DMODBUS_SILENCE=${MODBUS_SILENCE}
+    -DWITH_MODBUS=$<BOOL:${WITH_MODBUS}>
+    -DWITH_ASCII=$<BOOL:${WITH_ASCII}>
 )
+
+message(STATUS "Modbus RTU client ${WITH_MODBUS}")
+message(STATUS "ASCII point-to-point protocol ${WITH_ASCII}")
 
 # mmcu MUST be passed to both the compiler and linker, this handles
 # the linker. Also, add floating point support to printf
