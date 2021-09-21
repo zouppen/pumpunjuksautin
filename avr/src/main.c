@@ -27,8 +27,8 @@
 #include "juksautin.h"
 #include "pin.h"
 #include "hardware_config.h"
-#include "interface_ascii.h"
-#include "interface_modbus.h"
+#include "interface/ascii.h"
+#include "interface/modbus.h"
 
 // Prototypes
 static void loop(void);
@@ -93,12 +93,12 @@ void loop(void) {
 		}
 	} else if (ascii_allowed) {
 		// Process ASCII message
-		interface_ascii(rx_buf, len);
+		ascii_interface(rx_buf, len);
 		serial_free_message();
 		serial_tx_line();
 	} else if (WITH_MODBUS) {
 		// Process Modbus message
-		buflen_t tx_len = interface_modbus(rx_buf, len);
+		buflen_t tx_len = modbus_interface(rx_buf, len);
 		serial_free_message();
 		if (tx_len != 0) {
 			serial_tx_bin(tx_len);

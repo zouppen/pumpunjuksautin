@@ -20,7 +20,7 @@ cat <<EOF
 // Automatically generated file. Edit avr/commands.tsv instead!
 #include <stdlib.h>
 #include <avr/pgmspace.h>
-#include "cmd.h"
+#include "interface/cmd.h"
 #include "juksautin.h"
 #include "clock.h"
 #include "misc.h"

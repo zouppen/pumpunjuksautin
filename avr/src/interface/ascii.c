@@ -1,4 +1,4 @@
-// Pumpunjuksautin interface functions.
+// Pumpunjuksautin ASCII interface functions.
 //
 // SPDX-License-Identifier:   GPL-3.0-or-later
 // Copyright (C) 2021 Joel Lehtonen
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <avr/pgmspace.h>
-#include "serial.h"
+#include "ascii.h"
 #include "cmd.h"
 
 #define SERIAL_TX_END (serial_tx + SERIAL_TX_LEN)
@@ -241,7 +241,7 @@ static int cmd_comparator(const void *key_void, const void *item_void)
 
 // Entry point to this object. Processes given input in ASCII and
 // performs the operations in there.
-bool interface_ascii(char *buf, buflen_t len)
+bool ascii_interface(char *buf, buflen_t len)
 {
 	const char *const ref_p = buf;
 

@@ -21,9 +21,9 @@
 #include <avr/pgmspace.h>
 #include <stddef.h>
 #include <util/crc16.h>
-#include "serial.h"
+#include "modbus.h"
 #include "cmd.h"
-#include "byteswap.h"
+#include "../byteswap.h"
 
 typedef buflen_t function_handler_t(char const *buf, buflen_t len);
 
@@ -263,7 +263,7 @@ static uint16_t modbus_crc(char const *buf, buflen_t len)
 	return crc;
 }
 
-buflen_t interface_modbus(char *buf, buflen_t len)
+buflen_t modbus_interface(char *buf, buflen_t len)
 {
 	// Let's start with RTU structure https://en.wikipedia.org/wiki/Modbus
 	

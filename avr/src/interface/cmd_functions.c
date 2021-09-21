@@ -22,9 +22,9 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include "cmd.h"
-#include "pin.h"
-#include "hardware_config.h"
-#include "byteswap.h"
+#include "../pin.h"
+#include "../hardware_config.h"
+#include "../byteswap.h"
 
 const cmd_result_t cmd_scan_success = { 0, NULL, 0 };
 

@@ -2,8 +2,8 @@
 
 // Command interface data types
 
-#include "serial.h"
-#include "modbus_types.h"
+#include "../serial.h"
+#include "../modbus_types.h"
 
 // Scan result. If error_msg == NULL it succeeded
 typedef struct {
