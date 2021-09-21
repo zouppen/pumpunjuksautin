@@ -94,6 +94,8 @@ static int handler_comparator(const void *key_void, const void *item_void)
 	return memcmp_P(key, item_P, offsetof(handler_t, f));
 }
 
+// Reads bits i.e. coils (function code 0x01) or input bits
+// i.e. discrete input bits (function code 0x02).
 static buflen_t read_bits(char const *buf, buflen_t len)
 {
 	// Command type is already populated in the tx
@@ -151,6 +153,8 @@ static buflen_t read_bits(char const *buf, buflen_t len)
 	return tx_header_len + bytes;;
 }
 
+// Read holding registers (function code 0x03) or input registers
+// (function code 0x04).
 static buflen_t read_registers(char const *buf, buflen_t len)
 {
 	// Command type is already populated in the tx
@@ -206,7 +210,7 @@ static buflen_t read_registers(char const *buf, buflen_t len)
 	return tx_header_len + 2*registers;
 }
 
-// Write a single holding registers (function code 16)
+// Write a single holding register (function code 0x06)
 static buflen_t write_register(char const *buf, buflen_t len)
 {
 	// Single register write has constant length
@@ -218,8 +222,8 @@ static buflen_t write_register(char const *buf, buflen_t len)
 	memcpy(serial_tx+2, buf, 4);
 
 	// Getting address and running write once
-	uint16_t addr = bswap_16(*(uint16_t*)buf);
-	cmd_modbus_result_t r = try_register_write(addr, buf+2, 2);
+	uint16_t const addr = bswap_16(*(uint16_t*)buf);
+	cmd_modbus_result_t const r = try_register_write(addr, buf+2, 2);
 	if (r.code != MODBUS_OK) {
 		return fill_exception(r.code);
 	} else {
@@ -227,7 +231,7 @@ static buflen_t write_register(char const *buf, buflen_t len)
 	}
 }
 
-// Write many holding registers (function code 16)
+// Write many holding registers (function code 0x10)
 static buflen_t write_registers(char const *buf, buflen_t len)
 {
 	// There are 5 bytes minimum after the function code
@@ -267,6 +271,7 @@ static buflen_t write_registers(char const *buf, buflen_t len)
 	return 6;
 }
 
+// Helper for register writes, contains the actual write logic.
 static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *buf_in, buflen_t const len)
 {
 	// Find command responsible of this address
@@ -298,6 +303,8 @@ uint8_t modbus_get_station_id(void)
 #error Modbus exceptions and typical answers require longer serial tx buffer
 #endif
 
+// Make the response an exception response by filling the serial
+// buffer accordingly.
 static buflen_t fill_exception(modbus_status_t status)
 {
 	serial_tx[1] |= 0x80;
@@ -305,6 +312,8 @@ static buflen_t fill_exception(modbus_status_t status)
 	return 3;
 }
 
+// Wraps given Modbus status code to a result type. Doesn't alter
+// serial buffers.
 static cmd_modbus_result_t wrap_exception(modbus_status_t status)
 {
 	// Pass the result and report no data consumed
