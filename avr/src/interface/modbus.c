@@ -172,9 +172,9 @@ static buflen_t write_register(char const *buf, buflen_t len)
 static buflen_t write_registers(char const *buf, buflen_t len)
 {
 	// There are 5 bytes minimum after the function code
-	buflen_t const tx_header_len = 5;
+	buflen_t const input_header_len = 5;
 
-	if (len < tx_header_len) {
+	if (len < input_header_len) {
 		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
 	}
 
@@ -188,13 +188,13 @@ static buflen_t write_registers(char const *buf, buflen_t len)
 	buflen_t const bytes = buf[4];
 
 	// Make sure all input data is there
-	if (tx_header_len + bytes != len) {
+	if (input_header_len + bytes != len) {
 		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
 	}
 	
 	// Start with base address and iterate until everything is got.
 	for (buflen_t i=0; i < bytes; ) {
-		cmd_modbus_result_t r = try_register_write(base_addr+i/2, buf+tx_header_len+i, bytes-i);
+		cmd_modbus_result_t r = try_register_write(base_addr+i/2, buf+input_header_len+i, bytes-i);
 		if (r.code != MODBUS_OK) {
 			return fill_exception(r.code);
 		}
