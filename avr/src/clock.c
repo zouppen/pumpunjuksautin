@@ -91,7 +91,7 @@ modbus_status_t clock_set_time_unix(time_t const ts_now)
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		// Reset counters. Not resetting TIMER2 because it
 		// would interfers with UART delay timers.
-		counter_b = 0;
+		counter_b = CLOCK_B;
 		set_system_time(avr_now);
 		is_set = true;
 	}
