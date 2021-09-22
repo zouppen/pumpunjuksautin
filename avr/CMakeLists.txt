@@ -33,8 +33,8 @@ set(CLOCK_PRESCALER 256 CACHE STRING "Clock prescaler for TIMER2")
 set(BAUD 9600 CACHE STRING "Serial port baud rate")
 
 # Build options
-set(WITH_MODBUS ON CACHE BOOL "Enable Modbus client support")
-set(WITH_ASCII ON CACHE BOOL "Enable ASCII point-to-point-protocol")
+set(WITH_MODBUS ON CACHE BOOL "Enable Modbus RTU server support")
+set(WITH_ASCII ON CACHE BOOL "Enable ASCII point-to-point protocol")
 
 message(STATUS "${MCU} running at ${F_CPU} Hz")
 
@@ -82,7 +82,7 @@ add_definitions(
     -DWITH_ASCII=$<BOOL:${WITH_ASCII}>
 )
 
-message(STATUS "Modbus RTU client ${WITH_MODBUS}")
+message(STATUS "Modbus RTU server ${WITH_MODBUS}")
 message(STATUS "ASCII point-to-point protocol ${WITH_ASCII}")
 
 # mmcu MUST be passed to both the compiler and linker, this handles
