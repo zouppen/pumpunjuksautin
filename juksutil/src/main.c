@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <err.h>
 #include "tz.h"
@@ -26,4 +27,7 @@ int main(int argc, char **argv)
 	if (!tz_populate_tzinfo(atoi(argv[2]), argv[1], &info)) {
 		err(1, "tzinfo reading failed");
 	}
+
+	// Temporary print of values
+	printf("%ld %d %ld\n", info.gmtoff_now, info.transition, info.gmtoff_after);
 }

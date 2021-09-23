@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 typedef struct {
-	int32_t gmtoff_now;
+	int64_t gmtoff_now;
 	uint32_t transition;
-	int32_t gmtoff_after;
+	int64_t gmtoff_after;
 } tzinfo_t;
 
 // Populate given tzinfo with the next gmtoff change

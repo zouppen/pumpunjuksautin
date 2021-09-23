@@ -27,7 +27,7 @@ G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(mmap_info_t, mmap_close);
 
 static bool mmap_zonefile(char const *zone, mmap_info_t *file);
 static void *find_v2_header(char *p, int len);
-static bool find_next_transition(char *p, int len, time_t now);
+static bool find_next_transition(tzinfo_t *dest, char *p, int len, time_t now);
 
 static int const header_len = 0x2c;
 static int const header_boilerplate = 0x14;
@@ -48,7 +48,7 @@ bool tz_populate_tzinfo(time_t now, char const *zone, tzinfo_t *info)
 	void *p = find_v2_header(file.data, file.length);
 	if (p == NULL) return false;
 
-	find_next_transition(p, file.data + file.length - p, now);
+	find_next_transition(info, p, file.data + file.length - p, now);
 	return true;
 }
 
@@ -100,13 +100,13 @@ static void *find_v2_header(char *p, int len)
 }
 
 // Find the next transition
-static bool find_next_transition(char *p, int len, time_t now)
+static bool find_next_transition(tzinfo_t *dest, char *p, int len, time_t now)
 {
 	// Check if it's too short
-	if (len < header_len) return NULL;
+	if (len < header_len) return false;
 	
 	// Test version
-	if (p[4] < '2') return NULL;
+	if (p[4] < '2') return false;
 
 	// Find boilerplate
 	uint32_t *lens = (uint32_t*)(p + header_boilerplate);
@@ -121,7 +121,7 @@ static bool find_next_transition(char *p, int len, time_t now)
 
 	if ((void *)p + len < (void *)(info + tzh_typecnt)) {
 		// EOF reached
-		return NULL;
+		return false;
 	}
 
 	// Binary search
@@ -137,13 +137,19 @@ static bool find_next_transition(char *p, int len, time_t now)
 		}
 	}
 
-	// Temporary prints
-	printf("osui %ld\n", be64toh(transition[low]));
-	if (high == tzh_timecnt) {
-		printf("aika on loppu\n");
+	// Find gmtoff
+	ttinfo_t *ttinfo_low = &info[type[low]];
+	ttinfo_t *ttinfo_high = (high == tzh_timecnt) ? NULL : &info[type[high]];
+
+	// Populate answer
+	dest->gmtoff_now = be32toh(ttinfo_low->tt_gmtoff);
+	if (ttinfo_high == NULL) {
+		dest->transition = 0;
+		dest->gmtoff_after = 0;
 	} else {
-		printf("seuraava %ld\n", be64toh(transition[high]));
+		dest->transition = be64toh(transition[high]);
+		dest->gmtoff_after = be32toh(ttinfo_high->tt_gmtoff);
 	}
-	
+ 
 	return true;
 }
