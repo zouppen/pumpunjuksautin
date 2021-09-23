@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 {
 	tzinfo_t info;
 	if (argc != 3) errx(1, "Parametreja väärä määrä: %d", argc);
-	if (!tz_populate_tzinfo(atoi(argv[2]), argv[1], &info)) {
+	if (!tz_populate_tzinfo(&info, argv[1], atoi(argv[2]))) {
 		err(1, "tzinfo reading failed");
 	}
 

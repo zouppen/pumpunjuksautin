@@ -10,4 +10,4 @@ typedef struct {
 } tzinfo_t;
 
 // Populate given tzinfo with the next gmtoff change
-bool tz_populate_tzinfo(time_t now, char const *zone, tzinfo_t *info);
+bool tz_populate_tzinfo(tzinfo_t *dest, char const *zone, int64_t now);

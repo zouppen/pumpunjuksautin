@@ -27,7 +27,7 @@ G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(mmap_info_t, mmap_close);
 
 static bool mmap_zonefile(char const *zone, mmap_info_t *file);
 static void *find_v2_header(char *p, int len);
-static bool find_next_transition(tzinfo_t *dest, char *p, int len, time_t now);
+static bool find_next_transition(tzinfo_t *dest, char *p, int len, int64_t now);
 
 static int const header_len = 0x2c;
 static int const header_boilerplate = 0x14;
@@ -38,7 +38,7 @@ typedef struct __attribute__((packed)) {
 	unsigned char  tt_abbrind;
 } ttinfo_t;
 
-bool tz_populate_tzinfo(time_t now, char const *zone, tzinfo_t *info)
+bool tz_populate_tzinfo(tzinfo_t *dest, char const *zone, int64_t now)
 {
 	g_auto(mmap_info_t) file;
 	if (!mmap_zonefile(zone, &file)) {
@@ -46,9 +46,11 @@ bool tz_populate_tzinfo(time_t now, char const *zone, tzinfo_t *info)
 	}
 
 	void *p = find_v2_header(file.data, file.length);
-	if (p == NULL) return false;
+	if (p == NULL) {
+		return false;
+	}
 
-	find_next_transition(info, p, file.data + file.length - p, now);
+	find_next_transition(dest, p, file.data + file.length - p, now);
 	return true;
 }
 
@@ -100,7 +102,7 @@ static void *find_v2_header(char *p, int len)
 }
 
 // Find the next transition
-static bool find_next_transition(tzinfo_t *dest, char *p, int len, time_t now)
+static bool find_next_transition(tzinfo_t *dest, char *p, int len, int64_t now)
 {
 	// Check if it's too short
 	if (len < header_len) return false;
