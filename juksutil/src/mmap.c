@@ -72,7 +72,7 @@ bool mmap_open(const char *pathname, mmap_mode_t mode, size_t length, mmap_info_
 	
 	return info;
 fail_open:
-	return close(info->fd) != -1;
+	close(info->fd);
 fail_start:
 	return false;
 }
