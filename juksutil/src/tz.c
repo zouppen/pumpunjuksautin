@@ -156,6 +156,7 @@ static bool find_next_transition(tzinfo_t *dest, char *p, int len, int64_t now)
 		dest->transition = be64toh(transition[high]);
 		dest->gmtoff_after = be32toh(ttinfo_high->tt_gmtoff);
 	}
- 
+
+	dest->ref_time = now;
 	return true;
 }

@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 typedef struct {
+	time_t ref_time;
 	int64_t gmtoff_now;
 	uint32_t transition;
 	int64_t gmtoff_after;
