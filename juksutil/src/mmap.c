@@ -62,6 +62,10 @@ bool mmap_open(const char *pathname, mmap_mode_t mode, mmap_info_t *info)
 		goto fail_open;
 	}
 	info->length = stats.st_size;
+	if (!S_ISREG(stats.st_mode)) {
+		errno = ENOENT;
+		goto fail_open;
+	}			
 
 	// Doing some black bit magic with mmap.
 	info->data = mmap(NULL, info->length, mmap_prot, mmap_flags, info->fd, 0);
