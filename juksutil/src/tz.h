@@ -5,9 +5,9 @@
 
 typedef struct {
 	time_t ref_time;
-	int64_t gmtoff_now;
-	uint32_t transition;
-	int64_t gmtoff_after;
+	int32_t gmtoff_now;
+	uint64_t transition;
+	int32_t gmtoff_after;
 } tzinfo_t;
 
 // Populate given tzinfo with the next gmtoff change
