@@ -19,10 +19,10 @@ typedef struct mmap_info {
 /**
  * mmap() the given file at pathname and populates the variable
  * "info". Parameter 'mode' sets the access to the file and memory
- * area.  In case of error false is returned and errno is set. If
- * length is zero, length is inferred from file.
+ * area.  In case of error false is returned and errno is set. The
+ * length of the mmap() is the file length.
  */
-bool mmap_open(const char *pathname, mmap_mode_t mode, size_t length, mmap_info_t *info);
+bool mmap_open(const char *pathname, mmap_mode_t mode, mmap_info_t *info);
 
 /**
  * Closes the given mmapped file. Returns false on failure and sets errno.

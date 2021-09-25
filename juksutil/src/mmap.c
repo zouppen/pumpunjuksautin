@@ -23,7 +23,7 @@
 #include <errno.h>
 #include "mmap.h"
 
-bool mmap_open(const char *pathname, mmap_mode_t mode, size_t length, mmap_info_t *info)
+bool mmap_open(const char *pathname, mmap_mode_t mode, mmap_info_t *info)
 {
 	// Make the g_auto work correctly in case glib is used.
 	info->data = NULL;
@@ -56,15 +56,12 @@ bool mmap_open(const char *pathname, mmap_mode_t mode, size_t length, mmap_info_
 	info->fd = open(pathname, open_flags);
 	if (info->fd == -1) goto fail_start;
 	
-	if (length == 0) {
-		// Determining the length of this file.
-		struct stat stats;
-		if (fstat(info->fd, &stats) == -1) goto fail_open;
-		info->length = stats.st_size;
-	} else {
-		// Using predefined length
-		info->length = length;
+	// Determining the length of this file.
+	struct stat stats;
+	if (fstat(info->fd, &stats) == -1) {
+		goto fail_open;
 	}
+	info->length = stats.st_size;
 
 	// Doing some black bit magic with mmap.
 	info->data = mmap(NULL, info->length, mmap_prot, mmap_flags, info->fd, 0);

@@ -62,7 +62,7 @@ static bool mmap_zonefile(char const *zone, mmap_info_t *info)
 		return false;
 	}
 
-	bool ok = mmap_open(filename, MMAP_MODE_READONLY, 0, info);
+	bool ok = mmap_open(filename, MMAP_MODE_READONLY, info);
 	free(filename);
 	return ok;
 }
