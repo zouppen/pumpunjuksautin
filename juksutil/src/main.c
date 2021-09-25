@@ -23,6 +23,10 @@
 #include <time.h>
 #include "tz.h"
 
+static time_t get_timestamp(void);
+static tzinfo_t get_tzinfo(void);
+static char *format_iso8601(time_t ref);
+
 static gchar *time_zone = "localtime";
 static gchar *now_str = NULL;
 
@@ -35,14 +39,56 @@ static GOptionEntry entries[] =
 
 int main(int argc, char **argv)
 {
-	time_t now;
 	g_autoptr(GError) error = NULL;
-	g_autoptr(GOptionContext) context = g_option_context_new("- Communicates with Pumpunjuksautin");
+	g_autoptr(GOptionContext) context = g_option_context_new("COMMAND");
 	g_option_context_add_main_entries(context, entries, NULL);
+	g_option_context_set_summary(context, "Tool for communicating with JuksOS devices such as Pumpunjuksautin.");
+	g_option_context_set_description(context, "Commands:\n  show-transition       Show current time zone and future DST transition, if any.\n");
+	
 	if (!g_option_context_parse(context, &argc, &argv, &error))
 	{
 		errx(1, "Option parsing failed: %s", error->message);
 	}
+
+	// Command validation and selection
+	if (argc < 2) {
+		errx(1, "Command missing. See %s --help", argv[0]);
+	}
+	if (argc > 2) {
+		errx(1, "Too many arguments. See %s --help", argv[0]);
+	}
+	if (!strcmp(argv[1], "show-transition")) {
+		tzinfo_t info = get_tzinfo();
+		printf("                       ISO 8601              Timestamp  UTC offset\n""                       --------              ---------  ----------\n");
+		printf("Reference time:        %-20s%12ld%+11d\n", format_iso8601(info.ref_time), info.ref_time, info.gmtoff_now);
+		if (info.transition) {
+			printf("Next transition time:  %-20s%12lu%+11d\n", format_iso8601(info.transition), info.transition, info.gmtoff_after);
+		} else {
+			printf("No future transitions\n");
+		}
+	} else {
+		errx(1, "Invalid command name. See %s --help", argv[0]);
+	}
+}
+
+// Returns time formatted to ISO8601 UTC timestamp. This function is
+// not re-entrant. May terminate the program in case of an error.
+static char *format_iso8601(time_t ref)
+{
+	static char buf[25];
+	struct tm *tm = gmtime(&ref);
+	if (tm == NULL) goto fail;
+	if (strftime(buf, sizeof(buf), "%FT%TZ", tm) == 0) goto fail;
+	return buf;
+ fail:
+	errx(1, "Date formatting error");
+}
+
+// Get timestamp from global variable if set or use the current
+// time. May terminate the program if invalid time given.
+static time_t get_timestamp()
+{
+	time_t now;
 
 	// Fetching current time
 	if (now_str != NULL) {
@@ -63,14 +109,16 @@ int main(int argc, char **argv)
 	if (now == -1) {
 		errx(1, "Fatal date error");
 	}
-	printf("jes unix sanoo %ld\n", now);
+	return now;
+}
 
+// Get time zone information based on global variables. May terminate
+// the program if invalid time or zone given.
+tzinfo_t get_tzinfo()
+{
 	tzinfo_t info;
-
-	if (!tz_populate_tzinfo(&info, time_zone, now)) {
+	if (!tz_populate_tzinfo(&info, time_zone, get_timestamp())) {
 		err(1, "tzinfo reading failed");
 	}
-
-	// Temporary print of values
-	printf("%ld %d %ld\n", info.gmtoff_now, info.transition, info.gmtoff_after);
+	return info;
 }
