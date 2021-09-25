@@ -132,7 +132,7 @@ static bool find_next_transition(tzinfo_t *dest, char *p, int len, int64_t now)
 
 	// Binary search
 	uint32_t low = 0, high = tzh_timecnt;
-	while (low+1 != high) {
+	while (low+1 < high) {
 		uint32_t mid = (high+low)/2;
 		printf("low %d mid %d high %d\n", low, mid, high);
 		int64_t ts_mid = be64toh(transition[mid]);
