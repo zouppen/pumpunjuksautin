@@ -54,11 +54,12 @@ bool tz_populate_tzinfo(tzinfo_t *dest, char const *zone, int64_t now)
 	return true;
 }
 
+// Open given zone file with mmap()
 static bool mmap_zonefile(char const *zone, mmap_info_t *info)
 {
 	char *filename = NULL;
 
-	if (asprintf(&filename, "/usr/share/zoneinfo/%s", zone == NULL ? "localtime" : zone) == -1) {
+	if (asprintf(&filename, "/usr/share/zoneinfo/%s", zone) == -1) {
 		return false;
 	}
 
@@ -67,6 +68,9 @@ static bool mmap_zonefile(char const *zone, mmap_info_t *info)
 	return ok;
 }
 
+// Iterates through tzfile and skips the legacy header. Returns
+// pointer to the beginning of version 2 header. Returns NULL if file
+// format is invalid.
 static void *find_v2_header(char *p, int len)
 {
 	// Check if it's too short
@@ -101,7 +105,7 @@ static void *find_v2_header(char *p, int len)
 	return p + skip;
 }
 
-// Find the next transition
+// Find the next transition from version 2 part of the tzfile.
 static bool find_next_transition(tzinfo_t *dest, char *p, int len, int64_t now)
 {
 	// Check if it's too short
