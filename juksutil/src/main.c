@@ -22,19 +22,27 @@
 #include <glib.h>
 #include <time.h>
 #include "tz.h"
+#include "sync_clock.h"
 
 static time_t get_timestamp(void);
 static tzinfo_t get_tzinfo(void);
 static char *format_iso8601(time_t ref);
 static void cmd_show_transition(void);
+static void cmd_sync_clock();
 
 static gchar *time_zone = "localtime";
 static gchar *now_str = NULL;
+static gchar *dev_path = NULL;
+static gint dev_baud = 9600;
+static gint dev_slave = 1;
 
 static GOptionEntry entries[] =
 {
 	{ "timezone", 'z', 0, G_OPTION_ARG_STRING, &time_zone, "Time zone used in date operations, e.g. Europe/Berlin. Default: localtime", "TZ"},
 	{ "now", 'n', 0, G_OPTION_ARG_STRING, &now_str, "Use this time instead of current time. In ISO8601 format. Default: now", "STRING"},
+	{ "device", 'd', 0, G_OPTION_ARG_FILENAME, &dev_path, "Device path to JuksOS device", "PATH"},
+	{ "baud", 'b', 0, G_OPTION_ARG_INT, &dev_baud, "Device baud rate. Default: 9600", "BAUD"},
+	{ "slave", 's', 0, G_OPTION_ARG_INT, &dev_slave, "Device Modbus server id. Default: 1", "ID"},
 	{ NULL }
 };
 
@@ -64,9 +72,22 @@ int main(int argc, char **argv)
 	}
 	if (!strcmp(argv[1], "show-transition")) {
 		cmd_show_transition();
+	} else if (!strcmp(argv[1], "sync-clock")) {
+		cmd_sync_clock();
 	} else {
 		errx(1, "Invalid command name. See %s --help", argv[0]);
 	}
+}
+
+// Command for syncing the clock time of a device.
+static void cmd_sync_clock()
+{
+	if (dev_path == NULL) {
+		errx(1, "Device name must be given with -d, optionally baud rate with -b and server id with -s");
+	}
+	
+	tzinfo_t info = get_tzinfo();
+	sync_clock(&info, now_str == NULL, dev_path, dev_baud, dev_slave);
 }
 
 // Command for just showing the next DST transition and the UTC offset
