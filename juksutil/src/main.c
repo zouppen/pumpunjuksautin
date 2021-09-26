@@ -34,7 +34,7 @@ static gchar *now_str = NULL;
 static GOptionEntry entries[] =
 {
 	{ "timezone", 'z', 0, G_OPTION_ARG_STRING, &time_zone, "Time zone used in date operations, e.g. Europe/Berlin. Default: localtime", "TZ"},
-	{ "now", 'd', 0, G_OPTION_ARG_STRING, &now_str, "Use this time instead of current time. In ISO8601 format", "STRING"},
+	{ "now", 'n', 0, G_OPTION_ARG_STRING, &now_str, "Use this time instead of current time. In ISO8601 format. Default: now", "STRING"},
 	{ NULL }
 };
 
@@ -47,6 +47,7 @@ int main(int argc, char **argv)
 	g_option_context_set_description(context,
 					 "Commands:\n"
 					 "  show-transition       Show current time zone and future DST transition, if any.\n"
+					 "  sync-clock            Synchronize clock of JuksOS device. Sets also DST transition table."
 					 "");
 
 	if (!g_option_context_parse(context, &argc, &argv, &error))
@@ -74,7 +75,7 @@ static void cmd_show_transition()
 {
 	tzinfo_t info = get_tzinfo();
 	ldiv_t off_ref = ldiv(info.gmtoff_now / 60, 60);
-	printf("\x1b[1m                  ISO 8601 UTC time    Zone    UNIX time   UTC offset\x1b[0m\n");
+	printf("\x1b[1m                  UTC time (ISO 8601)  Zone    UNIX time   UTC offset\x1b[0m\n");
 	printf("\x1b[1mReference time:\x1b[0m   %-19s  %+03ld:%02ld%12ld  %+10d\n", format_iso8601(info.ref_time), off_ref.quot, off_ref.rem, info.ref_time, info.gmtoff_now);
 	if (info.transition) {
 		ldiv_t off_after = ldiv(info.gmtoff_after / 60, 60);
