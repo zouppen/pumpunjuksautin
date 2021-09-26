@@ -75,7 +75,7 @@ static void *find_v2_header(char *p, int len)
 {
 	// Check if it's too short
 	if (len < header_len) return NULL;
-	
+
 	// Test version
 	if (p[4] < '2') return NULL;
 
@@ -101,7 +101,7 @@ static void *find_v2_header(char *p, int len)
 
 	// Check that we're still inside the file
 	if (len < skip) return NULL;
-	
+
 	return p + skip;
 }
 
@@ -110,7 +110,7 @@ static bool find_next_transition(tzinfo_t *dest, char *p, int len, int64_t now)
 {
 	// Check if it's too short
 	if (len < header_len) return false;
-	
+
 	// Test version
 	if (p[4] < '2') return false;
 

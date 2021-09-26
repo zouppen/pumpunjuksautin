@@ -55,7 +55,7 @@ bool mmap_open(const char *pathname, mmap_mode_t mode, mmap_info_t *info)
 	// Opening a file as we do normally.
 	info->fd = open(pathname, open_flags);
 	if (info->fd == -1) goto fail_start;
-	
+
 	// Determining the length of this file.
 	struct stat stats;
 	if (fstat(info->fd, &stats) == -1) {
@@ -65,12 +65,12 @@ bool mmap_open(const char *pathname, mmap_mode_t mode, mmap_info_t *info)
 	if (!S_ISREG(stats.st_mode)) {
 		errno = ENOENT;
 		goto fail_open;
-	}			
+	}
 
 	// Doing some black bit magic with mmap.
 	info->data = mmap(NULL, info->length, mmap_prot, mmap_flags, info->fd, 0);
 	if (info->data == MAP_FAILED) goto fail_open;
-	
+
 	return info;
 fail_open:
 	close(info->fd);
@@ -82,7 +82,7 @@ bool mmap_close(mmap_info_t *info)
 {
 	// If didn't even open the file
 	if (info->data == NULL) return true;
-	
+
 	// Not processing failures. It is more important to close the
 	// file. In that case close errno will overwrite this errno.
 	munmap(info->data, info->length);

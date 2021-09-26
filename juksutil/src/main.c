@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_set_summary(context, "Tool for communicating with JuksOS devices such as Pumpunjuksautin.");
 	g_option_context_set_description(context, "Commands:\n  show-transition       Show current time zone and future DST transition, if any.\n");
-	
+
 	if (!g_option_context_parse(context, &argc, &argv, &error))
 	{
 		errx(1, "Option parsing failed: %s", error->message);
