@@ -59,12 +59,14 @@ int main(int argc, char **argv)
 	}
 	if (!strcmp(argv[1], "show-transition")) {
 		tzinfo_t info = get_tzinfo();
-		printf("                       ISO 8601              Timestamp  UTC offset\n""                       --------              ---------  ----------\n");
-		printf("Reference time:        %-20s%12ld%+11d\n", format_iso8601(info.ref_time), info.ref_time, info.gmtoff_now);
+		ldiv_t off_ref = ldiv(info.gmtoff_now / 60, 60);
+		printf("\x1b[1m                  ISO 8601 UTC time    Zone    UNIX time   UTC offset\x1b[0m\n");
+		printf("\x1b[1mReference time:\x1b[0m   %-19s  %+03ld:%02ld%12ld  %+10d\n", format_iso8601(info.ref_time), off_ref.quot, off_ref.rem, info.ref_time, info.gmtoff_now);
 		if (info.transition) {
-			printf("Next transition time:  %-20s%12lu%+11d\n", format_iso8601(info.transition), info.transition, info.gmtoff_after);
+			ldiv_t off_after = ldiv(info.gmtoff_after / 60, 60);
+			printf("\x1b[1mNext transition:\x1b[0m  %-19s  %+03ld:%02ld%12ld  %+10d\n", format_iso8601(info.transition), off_after.quot, off_after.rem, info.transition, info.gmtoff_after);
 		} else {
-			printf("No future transitions\n");
+			printf("\x1b[1mNext transition:\x1b[0m  No future transitions\n");
 		}
 	} else {
 		errx(1, "Invalid command name. See %s --help", argv[0]);
@@ -78,7 +80,7 @@ static char *format_iso8601(time_t ref)
 	static char buf[25];
 	struct tm *tm = gmtime(&ref);
 	if (tm == NULL) goto fail;
-	if (strftime(buf, sizeof(buf), "%FT%TZ", tm) == 0) goto fail;
+	if (strftime(buf, sizeof(buf), "%FT%T", tm) == 0) goto fail;
 	return buf;
  fail:
 	errx(1, "Date formatting error");
