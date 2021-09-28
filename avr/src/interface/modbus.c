@@ -21,6 +21,7 @@
 #include <avr/pgmspace.h>
 #include <stddef.h>
 #include <util/crc16.h>
+#include "ascii.h"
 #include "modbus.h"
 #include "cmd.h"
 #include "../byteswap.h"
@@ -48,6 +49,9 @@ static function_handler_t write_bit;
 static function_handler_t write_bits;
 static function_handler_t write_register;
 static function_handler_t write_registers;
+static function_handler_t ascii_wrapper;
+
+#define WITH_ASCII_WRAPPER 1
 
 // Keep this list numerically sorted
 static handler_t const handlers[] PROGMEM = {
@@ -59,6 +63,9 @@ static handler_t const handlers[] PROGMEM = {
 	{ 0x06, &write_register},
 	{ 0x0F, &write_bits},
 	{ 0x10, &write_registers},
+#ifdef WITH_ASCII_WRAPPER
+	{ 0x1C, &ascii_wrapper},
+#endif
 };
 
 // Search given command from the table generated to cmd.c
@@ -384,6 +391,28 @@ static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *b
 
 	// Finally we can do the actual action.
 	return writer(buf_in, len, setter);
+}
+
+// Non-standard ASCII wrapper support, for running ASCII commands over
+// Modbus.
+static buflen_t ascii_wrapper(char *buf, buflen_t len, modbus_object_t const _)
+{
+	// Check it is NUL terminated (before CRC)
+	if (buf[len-1] != '\0') {
+		return fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
+	}
+
+	// ASCII interface may overwrite the first two bytes, collecting them.
+	char const b0 = buf[0];
+	char const b1 = buf[1];
+	
+	// Use ASCII handler but prepend the request with server id
+	// and function code
+	ascii_interface(buf+2, 2); 
+
+	buf[0] = b0;
+	buf[1] = b1;
+	return strlen(buf+2) + 3; // 2 byte header + payload + NUL 
 }
 
 uint8_t modbus_get_server_id(void)
