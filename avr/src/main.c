@@ -92,8 +92,13 @@ void loop(void) {
 			serial_tx_line();
 		}
 	} else if (ascii_allowed) {
-		// Process ASCII message
-		ascii_interface(rx_buf, len);
+		// Process ASCII message.
+		if (ascii_strip_line_ending(rx_buf, len)) {
+			strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
+		} else {
+			// Handle message after stripping newline.
+			ascii_interface(rx_buf);
+		}
 		serial_free_message();
 		serial_tx_line();
 	} else if (WITH_MODBUS) {

@@ -25,7 +25,6 @@
 
 #define SERIAL_TX_END (serial_tx + SERIAL_TX_LEN)
 
-static bool strip_line_ending(char *buf, int const len);
 static bool process_read(char *buf, char *serial_out, buflen_t parse_pos);
 static bool process_write(char *buf, buflen_t parse_pos);
 static bool process_help(void);
@@ -37,9 +36,7 @@ static void error_full(buflen_t parse_pos);
 // Version definition is delivered by version.cmake
 extern char const version[] PROGMEM;
 
-// Replace line ending (LF or CRLF) from the message with NUL
-// character.
-static bool strip_line_ending(char *const buf, int const len)
+bool ascii_strip_line_ending(char *const buf, int const len)
 {
 	// No LF is a showstopper
 	if (buf[len-1] != '\n') return false;
@@ -241,16 +238,9 @@ static int cmd_comparator(const void *key_void, const void *item_void)
 
 // Entry point to this object. Processes given input in ASCII and
 // performs the operations in there.
-bool ascii_interface(char *buf, buflen_t len)
+bool ascii_interface(char *buf)
 {
 	const char *const ref_p = buf;
-
-	// Handle corner cases: incorrect line ending or empty
-	// message. NB! strip_line_ending alters the buffer!
-	if (!strip_line_ending(buf, len)) {
-		strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
-		return false;
-	}
 
 	// Operation type parsing
 	char *const op = strsep(&buf, " ");
