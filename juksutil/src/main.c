@@ -18,17 +18,22 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <err.h>
 #include <glib.h>
 #include <time.h>
 #include "tz.h"
 #include "sync_clock.h"
+#include "serial.h"
 
 static time_t get_timestamp(void);
 static tzinfo_t get_tzinfo(void);
 static char *format_iso8601(time_t ref);
 static void cmd_show_transition(void);
 static void cmd_sync_clock();
+static void cmd_ascii(int const argc, char **argv);
+static bool matches(char const *const arg, char const *command, bool const cond);
+static void serial_timeout(int signo);
 
 static gchar *time_zone = "localtime";
 static gchar *now_str = NULL;
@@ -55,7 +60,9 @@ int main(int argc, char **argv)
 	g_option_context_set_description(context,
 					 "Commands:\n"
 					 "  show-transition       Show current time zone and future DST transition, if any.\n"
-					 "  sync-clock            Synchronize clock of JuksOS device. Sets also DST transition table."
+					 "  sync-clock            Synchronize clock of JuksOS device. Sets also DST transition table.\n"
+					 "  get KEY..             Read values from the hardware via ASCII interface\n"
+					 "  set KEY=VALUE..       Write values to the hardware via ASCII interface"
 					 "");
 
 	if (!g_option_context_parse(context, &argc, &argv, &error))
@@ -67,16 +74,74 @@ int main(int argc, char **argv)
 	if (argc < 2) {
 		errx(1, "Command missing. See %s --help", argv[0]);
 	}
-	if (argc > 2) {
-		errx(1, "Too many arguments. See %s --help", argv[0]);
-	}
-	if (!strcmp(argv[1], "show-transition")) {
+	if (matches(argv[1], "show-transition", argc == 2)) {
+		// Validate args
 		cmd_show_transition();
-	} else if (!strcmp(argv[1], "sync-clock")) {
+	} else if (matches(argv[1], "sync-clock", argc == 2)) {
 		cmd_sync_clock();
+	} else if (matches(argv[1], "get", argc > 2) ||
+		   matches(argv[1], "set", argc > 2)) {
+		cmd_ascii(argc, argv);
 	} else {
 		errx(1, "Invalid command name. See %s --help", argv[0]);
 	}
+	return 0;
+}
+
+static bool matches(char const *const arg, char const *command, bool const cond)
+{
+	if (strcmp(arg, command)) return false;
+	if (!cond) errx(1, "Invalid number of arguments to %s. See --help", command);
+	return true;
+}
+
+static void cmd_ascii(int const argc, char **argv)
+{
+	if (dev_path == NULL) {
+		errx(1, "Device name must be given with -d, optionally baud rate with -b");
+	}
+
+	// Craft compound message
+	g_autoptr(GString) cmd = g_string_new(argv[1]);
+	for (int i=2; i<argc; i++) {
+		g_string_append_c(cmd, ' ');
+		g_string_append(cmd, argv[i]);
+	}
+	g_string_append_c(cmd, '\n');
+
+	// Serial comms
+	FILE *f = serial_fopen(dev_path, dev_baud);
+	if (f == NULL) {
+		err(1, "Unable to open serial port");
+	}
+
+	// Set up signal handler in case of writing or reading blocks
+	if (signal(SIGALRM, serial_timeout) == SIG_ERR) {
+		err(1, "Unable to set a signal handler");
+	}
+	
+	if (fputs(cmd->str, f) == EOF) {
+		errx(1, "Unable to write to serial port");
+	}
+	char *line = NULL;
+	size_t len;
+	alarm(1);
+	if (getline(&line, &len, f) == -1) {
+		errx(1, "Unable to read from serial port");
+	}
+
+	if (line[0] == ' ') {
+		// Put the command as a reference for the error
+		// message.
+		fputs(cmd->str, stdout);
+	}
+	fputs(line, stdout);
+	free(line);
+}
+
+
+static void serial_timeout(int signo) {
+	errx(1, "Serial timeout. Is the device on and the baud rate correct?");
 }
 
 // Command for syncing the clock time of a device.
