@@ -386,7 +386,7 @@ static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *b
 	return writer(buf_in, len, setter);
 }
 
-uint8_t modbus_get_station_id(void)
+uint8_t modbus_get_server_id(void)
 {
 	// TODO EEPROM storage
 	return 1;
@@ -432,7 +432,7 @@ buflen_t modbus_interface(char *buf, buflen_t len)
 	if (len < 6) return 0;
 
 	// Check if targeted to us
-	if (buf[0] != modbus_get_station_id()) return 0;
+	if (buf[0] != modbus_get_server_id()) return 0;
 
 	// Collect checksum. NOTE: It is little-endian on wire!
 	len -= 2;
