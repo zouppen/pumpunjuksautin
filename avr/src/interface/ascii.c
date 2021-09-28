@@ -236,8 +236,10 @@ static int cmd_comparator(const void *key_void, const void *item_void)
 }
 
 // Entry point to this object. Processes given input in ASCII and
-// performs the operations in there.
-bool ascii_interface(char *buf)
+// performs the operations in there. Argument tx_skip can be used to
+// adjust the output by a number of bytes when padding to a modbus
+// frame, for example.
+bool ascii_interface(char *buf, buflen_t tx_skip)
 {
 	const char *const ref_p = buf;
 
@@ -246,20 +248,22 @@ bool ascii_interface(char *buf)
 	if (op != NULL) {
 		if (strcasecmp_P(op, PSTR("get")) == 0) {
 			if (buf == NULL) {
-				strcpy_P(serial_tx, PSTR("   ^ Expecting arguments"));
+				strcpy_P(serial_tx+tx_skip, PSTR("   ^ Expecting arguments"));
 				return false;
 			}
-			return process_read(buf, serial_tx, buf-ref_p);
+			return process_read(buf, serial_tx+tx_skip, buf-ref_p-tx_skip);
 		}
 		if (strcasecmp_P(op, PSTR("set")) == 0) {
 			if (buf == NULL) {
-				strcpy_P(serial_tx, PSTR("   ^ Expecting arguments"));
+				strcpy_P(serial_tx+tx_skip, PSTR("   ^ Expecting arguments"));
 				return false;
 			}
-			strcpy_P(serial_tx, PSTR("OK"));
-			return process_write(buf, buf-ref_p);
+			strcpy_P(serial_tx+tx_skip, PSTR("OK"));
+			return process_write(buf, buf-ref_p+tx_skip);
 		}
-		if (strcasecmp_P(op, PSTR("help")) == 0) {
+		if (tx_skip == 0 && strcasecmp_P(op, PSTR("help")) == 0) {
+			// If using tx skip the help command shouldn't
+			// work because it works non-standard way.
 			if (buf != NULL) {
 				strcpy_P(serial_tx, PSTR("    ^ No arguments expected"));
 				return false;
@@ -269,6 +273,6 @@ bool ascii_interface(char *buf)
 
 	}
 
-	strcpy_P(serial_tx, PSTR("^ Expecting 'GET', 'SET', or 'HELP'"));
+	strcpy_P(serial_tx+tx_skip, PSTR("^ Expecting 'GET', 'SET', or 'HELP'"));
 	return false;
 }

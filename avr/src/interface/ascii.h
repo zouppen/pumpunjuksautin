@@ -9,4 +9,4 @@
 bool ascii_strip_line_ending(char *const buf, int const len);
 
 // Process ASCII requests
-bool ascii_interface(char *buf);
+bool ascii_interface(char *buf, buflen_t tx_skip);

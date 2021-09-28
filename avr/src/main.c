@@ -97,7 +97,7 @@ void loop(void) {
 			strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
 		} else {
 			// Handle message after stripping newline.
-			ascii_interface(rx_buf);
+			ascii_interface(rx_buf, 0);
 		}
 		serial_free_message();
 		serial_tx_line();
