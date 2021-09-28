@@ -25,16 +25,17 @@
 #include "cmd.h"
 #include "../byteswap.h"
 
-typedef buflen_t function_handler_t(char const *buf, buflen_t len);
+typedef buflen_t function_handler_t(char const *buf, buflen_t len, modbus_object_t type);
 
 typedef struct {
 	uint8_t code;
 	function_handler_t *f;
+	modbus_object_t type;
 } handler_t;
 
 static cmd_modbus_t const *find_cmd(modbus_object_t type, uint16_t addr);
 static int cmd_comparator(const void *key_void, const void *item_void);
-static function_handler_t *find_function_handler(uint8_t const code);
+static handler_t find_function_handler(uint8_t const code);
 static int handler_comparator(const void *key_void, const void *item_void);
 static modbus_status_t try_bit_write(uint16_t const addr, bool const value);
 static cmd_modbus_result_t try_register_write(uint16_t const addr, char const *buf_in, buflen_t const len);
@@ -50,10 +51,10 @@ static function_handler_t write_registers;
 
 // Keep this list numerically sorted
 static handler_t const handlers[] PROGMEM = {
-	{ 0x01, &read_bits},
-	{ 0x02, &read_bits},
-	{ 0x03, &read_registers},
-	{ 0x04, &read_registers},
+	{ 0x01, &read_bits, COIL},
+	{ 0x02, &read_bits, DISCRETE_INPUT},
+	{ 0x03, &read_registers, INPUT_REGISTER},
+	{ 0x04, &read_registers, HOLDING_REGISTER},
 	{ 0x05, &write_bit},
 	{ 0x06, &write_register},
 	{ 0x0F, &write_bits},
@@ -80,13 +81,18 @@ static int cmd_comparator(const void *key_void, const void *item_void)
 	return memcmp_P(key, item_P, offsetof(cmd_modbus_t, action));
 }
 
-static function_handler_t *find_function_handler(uint8_t const code)
+static handler_t find_function_handler(uint8_t const code)
 {
 	handler_t *h = bsearch(&code, handlers,
 			       sizeof(handlers) / sizeof(handler_t),
 			       sizeof(handler_t), handler_comparator);
-	if (h == NULL) return NULL;
-	return pgm_read_ptr_near(&(h->f));
+	handler_t copy;
+	if (h == NULL) {
+		copy.f = NULL;
+	} else {
+		memcpy_P(&copy, h, sizeof(copy));
+	}
+	return copy;
 }
 
 static int handler_comparator(const void *key_void, const void *item_void)
@@ -98,12 +104,8 @@ static int handler_comparator(const void *key_void, const void *item_void)
 
 // Reads bits i.e. coils (function code 0x01) or input bits
 // i.e. discrete input bits (function code 0x02).
-static buflen_t read_bits(char const *buf, buflen_t len)
+static buflen_t read_bits(char const *buf, buflen_t len, modbus_object_t const type)
 {
-	// Command type is already populated in the tx
-	// buffer. Determining the correct command type from there.
-	modbus_object_t const type = serial_tx[1] == 1 ? COIL : DISCRETE_INPUT;
-	
 	buflen_t const tx_header_len = 3;
 
 	if (len != 4) {
@@ -157,11 +159,8 @@ static buflen_t read_bits(char const *buf, buflen_t len)
 
 // Read holding registers (function code 0x03) or input registers
 // (function code 0x04).
-static buflen_t read_registers(char const *buf, buflen_t len)
+static buflen_t read_registers(char const *buf, buflen_t len, modbus_object_t const type)
 {
-	// Command type is already populated in the tx
-	// buffer. Determining the correct command type from there.
-	modbus_object_t const type = serial_tx[1] == 3 ? HOLDING_REGISTER : INPUT_REGISTER;
 	buflen_t const tx_header_len = 3;
 
 	if (len != 4) {
@@ -213,7 +212,7 @@ static buflen_t read_registers(char const *buf, buflen_t len)
 }
 
 // Write bit i.e. force a single coil (function code 0x05)
-static buflen_t write_bit(char const *buf, buflen_t len)
+static buflen_t write_bit(char const *buf, buflen_t len, modbus_object_t const _)
 {
 	// We have constant length
 	if (len != 4) {
@@ -237,7 +236,7 @@ static buflen_t write_bit(char const *buf, buflen_t len)
 }
 
 // Write bits i.e. force a multiple coils (function code 0x0F)
-static buflen_t write_bits(char const *buf, buflen_t len)
+static buflen_t write_bits(char const *buf, buflen_t len, modbus_object_t const _)
 {
 	// There are 5 bytes minimum after the function code
 	buflen_t const input_header_len = 5;
@@ -305,7 +304,7 @@ modbus_status_t try_bit_write(uint16_t const addr, bool const value) {
 }
 
 // Write a single holding register (function code 0x06)
-static buflen_t write_register(char const *buf, buflen_t len)
+static buflen_t write_register(char const *buf, buflen_t len, modbus_object_t const _)
 {
 	// Single register write has constant length
 	if (len != 4) {
@@ -326,7 +325,7 @@ static buflen_t write_register(char const *buf, buflen_t len)
 }
 
 // Write many holding registers (function code 0x10)
-static buflen_t write_registers(char const *buf, buflen_t len)
+static buflen_t write_registers(char const *buf, buflen_t len, modbus_object_t const _)
 {
 	// There are 5 bytes minimum after the function code
 	buflen_t const input_header_len = 5;
@@ -449,13 +448,13 @@ buflen_t modbus_interface(char *buf, buflen_t len)
 	uint8_t function_code = buf[1];
 
 	// Find handler for function code
-	function_handler_t *f = find_function_handler(function_code);
+	handler_t handler = find_function_handler(function_code);
 	buflen_t ret;
-	if (f == NULL) {
+	if (handler.f == NULL) {
 		// Illegal function. Producing reply packet
 		ret = fill_exception(MODBUS_EXCEPTION_ILLEGAL_FUNCTION);
 	} else {
-		ret = f(buf+2, len-2);
+		ret = handler.f(buf+2, len-2, handler.type);
 		if (ret+2 > SERIAL_TX_LEN) {
 			// Cannot fit CRC
 			ret = fill_exception(MODBUS_EXCEPTION_SLAVE_OR_SERVER_FAILURE);
