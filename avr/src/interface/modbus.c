@@ -25,7 +25,7 @@
 #include "cmd.h"
 #include "../byteswap.h"
 
-typedef buflen_t function_handler_t(char const *buf, buflen_t len, modbus_object_t type);
+typedef buflen_t function_handler_t(char *buf, buflen_t len, modbus_object_t type);
 
 typedef struct {
 	uint8_t code;
@@ -104,7 +104,7 @@ static int handler_comparator(const void *key_void, const void *item_void)
 
 // Reads bits i.e. coils (function code 0x01) or input bits
 // i.e. discrete input bits (function code 0x02).
-static buflen_t read_bits(char const *buf, buflen_t len, modbus_object_t const type)
+static buflen_t read_bits(char *buf, buflen_t len, modbus_object_t const type)
 {
 	buflen_t const tx_header_len = 3;
 
@@ -159,7 +159,7 @@ static buflen_t read_bits(char const *buf, buflen_t len, modbus_object_t const t
 
 // Read holding registers (function code 0x03) or input registers
 // (function code 0x04).
-static buflen_t read_registers(char const *buf, buflen_t len, modbus_object_t const type)
+static buflen_t read_registers(char *buf, buflen_t len, modbus_object_t const type)
 {
 	buflen_t const tx_header_len = 3;
 
@@ -212,7 +212,7 @@ static buflen_t read_registers(char const *buf, buflen_t len, modbus_object_t co
 }
 
 // Write bit i.e. force a single coil (function code 0x05)
-static buflen_t write_bit(char const *buf, buflen_t len, modbus_object_t const _)
+static buflen_t write_bit(char *buf, buflen_t len, modbus_object_t const _)
 {
 	// We have constant length
 	if (len != 4) {
@@ -236,7 +236,7 @@ static buflen_t write_bit(char const *buf, buflen_t len, modbus_object_t const _
 }
 
 // Write bits i.e. force a multiple coils (function code 0x0F)
-static buflen_t write_bits(char const *buf, buflen_t len, modbus_object_t const _)
+static buflen_t write_bits(char *buf, buflen_t len, modbus_object_t const _)
 {
 	// There are 5 bytes minimum after the function code
 	buflen_t const input_header_len = 5;
@@ -304,7 +304,7 @@ modbus_status_t try_bit_write(uint16_t const addr, bool const value) {
 }
 
 // Write a single holding register (function code 0x06)
-static buflen_t write_register(char const *buf, buflen_t len, modbus_object_t const _)
+static buflen_t write_register(char *buf, buflen_t len, modbus_object_t const _)
 {
 	// Single register write has constant length
 	if (len != 4) {
@@ -325,7 +325,7 @@ static buflen_t write_register(char const *buf, buflen_t len, modbus_object_t co
 }
 
 // Write many holding registers (function code 0x10)
-static buflen_t write_registers(char const *buf, buflen_t len, modbus_object_t const _)
+static buflen_t write_registers(char *buf, buflen_t len, modbus_object_t const _)
 {
 	// There are 5 bytes minimum after the function code
 	buflen_t const input_header_len = 5;
