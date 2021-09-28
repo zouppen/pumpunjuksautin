@@ -192,7 +192,6 @@ static bool process_write(char *buf, buflen_t parse_pos)
 	// If it's the last, we succeeded. Otherwise doing a tail
 	// recursion until we run out of data.
 	if (buf == NULL) {
-		strcpy_P(serial_tx, PSTR("OK"));
 		return true;
 	}
 	return process_write(buf, buf - ref_p + parse_pos);
@@ -257,6 +256,7 @@ bool ascii_interface(char *buf)
 				strcpy_P(serial_tx, PSTR("   ^ Expecting arguments"));
 				return false;
 			}
+			strcpy_P(serial_tx, PSTR("OK"));
 			return process_write(buf, buf-ref_p);
 		}
 		if (strcasecmp_P(op, PSTR("help")) == 0) {
