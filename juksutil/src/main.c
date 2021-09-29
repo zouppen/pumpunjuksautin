@@ -19,7 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <modbus.h>
 #include <err.h>
+#include <errno.h>
 #include <glib.h>
 #include <time.h>
 #include "tz.h"
@@ -34,6 +36,8 @@ static void cmd_sync_clock();
 static void cmd_ascii(int const argc, char **argv);
 static bool matches(char const *const arg, char const *command, bool const cond);
 static void serial_timeout(int signo);
+static modbus_t *main_modbus_init(void);
+static void main_modbus_free(modbus_t *ctx);
 
 static gchar *time_zone = "localtime";
 static gchar *now_str = NULL;
@@ -147,12 +151,12 @@ static void serial_timeout(int signo) {
 // Command for syncing the clock time of a device.
 static void cmd_sync_clock()
 {
-	if (dev_path == NULL) {
-		errx(1, "Device name must be given with -d, optionally baud rate with -b and server id with -s");
-	}
+	modbus_t *ctx = main_modbus_init();
 	
 	tzinfo_t info = get_tzinfo();
-	sync_clock(&info, now_str == NULL, dev_path, dev_baud, dev_slave);
+	sync_clock(&info, now_str == NULL, ctx);
+
+	main_modbus_free(ctx);
 }
 
 // Command for just showing the next DST transition and the UTC offset
@@ -221,4 +225,33 @@ tzinfo_t get_tzinfo()
 		err(1, "tzinfo reading failed");
 	}
 	return info;
+}
+
+static modbus_t *main_modbus_init(void)
+{
+	if (dev_path == NULL) {
+		errx(1, "Device name must be given with -d, optionally baud rate with -b and server id with -s");
+	}
+
+	// Prepare modbus
+	modbus_t *ctx = modbus_new_rtu(dev_path, dev_baud, 'N', 8, 1);
+	if (ctx == NULL) {
+		err(1, "Unable to create the libmodbus context");
+	}
+
+	if (modbus_connect(ctx)) {
+		err(5, "Unable to open serial port");
+	}
+
+	if (modbus_set_slave(ctx, dev_slave)) {
+		err(5, "Unable to set modbus server id");
+	}
+	
+	return ctx;
+}
+
+static void main_modbus_free(modbus_t *ctx)
+{
+	modbus_close(ctx);
+	modbus_free(ctx);
 }

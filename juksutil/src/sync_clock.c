@@ -27,24 +27,8 @@
 static uint32_t exact_timestamp();
 
 // TODO return errors instead of dying
-void sync_clock(tzinfo_t const *tz, bool real_time, char const *dev, int baud, int slave)
+void sync_clock(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
 {
-	// Prepare modbus
-	modbus_t *ctx;
-
-	ctx = modbus_new_rtu(dev, baud, 'N', 8, 1);
-	if (ctx == NULL) {
-		err(1, "Unable to create the libmodbus context");
-	}
-
-	if (modbus_connect(ctx)) {
-		err(5, "Unable to open serial port");
-	}
-
-	if (modbus_set_slave(ctx, slave)) {
-		err(5, "Unable to set modbus server id");
-	}
-
 	// Collect data and swap endianness
 	uint16_t buf[8];
 	buf[2] = tz->gmtoff_now >> 16;
@@ -62,9 +46,6 @@ void sync_clock(tzinfo_t const *tz, bool real_time, char const *dev, int baud, i
 	if (modbus_write_registers(ctx, 0, 8, buf) != 8) {
 		err(2, "Modbus write failed");
 	}
-
-	modbus_close(ctx);
-	modbus_free(ctx);
 }
 
 // Does exact timestamp by sleeping until the next full second
