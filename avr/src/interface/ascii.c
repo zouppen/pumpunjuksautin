@@ -151,7 +151,7 @@ static void error_full(buflen_t parse_pos)
 // Process write requests. Outputs error messages or "OK".
 static bool process_write(char *buf, buflen_t parse_pos)
 {
-	const char *const ref_p = buf - parse_pos;
+	const char *const ref_p = buf;
 
 	// Finding the name from the lookup table
 	char const *const name = strsep(&buf, "=");
@@ -184,7 +184,7 @@ static bool process_write(char *buf, buflen_t parse_pos)
 	
 	// OK, now it gets exciting. We have all the functions, so
 	// just doing the magic!
-	buflen_t const val_pos = value - ref_p;
+	buflen_t const val_pos = value - ref_p + parse_pos;
 	const cmd_result_t res = scanner(value, writer);
 	if (res.error_msg != NULL) {
 		const buflen_t pad = serial_pad(val_pos + res.error_pos);
@@ -198,7 +198,7 @@ static bool process_write(char *buf, buflen_t parse_pos)
 		strcpy_P(serial_tx, PSTR("OK"));
 		return true;
 	}
-	return process_write(buf, buf-ref_p);
+	return process_write(buf, buf - ref_p + parse_pos);
 }
 
 static bool process_help()
