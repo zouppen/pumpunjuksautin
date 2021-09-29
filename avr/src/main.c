@@ -93,7 +93,7 @@ void loop(void) {
 		}
 	} else if (ascii_allowed) {
 		// Process ASCII message.
-		if (ascii_strip_line_ending(rx_buf, len)) {
+		if (!ascii_strip_line_ending(rx_buf, len)) {
 			strcpy_P(serial_tx, PSTR("Message not terminated by newline"));
 		} else {
 			// Handle message after stripping newline.

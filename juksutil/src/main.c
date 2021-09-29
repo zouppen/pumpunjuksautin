@@ -18,7 +18,6 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <modbus.h>
 #include <err.h>
 #include <errno.h>
@@ -26,7 +25,6 @@
 #include <time.h>
 #include "tz.h"
 #include "sync_clock.h"
-#include "serial.h"
 
 static time_t get_timestamp(void);
 static tzinfo_t get_tzinfo(void);
@@ -35,7 +33,6 @@ static void cmd_show_transition(void);
 static void cmd_sync_clock();
 static void cmd_ascii(int const argc, char **argv);
 static bool matches(char const *const arg, char const *command, bool const cond);
-static void serial_timeout(int signo);
 static modbus_t *main_modbus_init(void);
 static void main_modbus_free(modbus_t *ctx);
 
@@ -101,51 +98,43 @@ static bool matches(char const *const arg, char const *command, bool const cond)
 
 static void cmd_ascii(int const argc, char **argv)
 {
-	if (dev_path == NULL) {
-		errx(1, "Device name must be given with -d, optionally baud rate with -b");
-	}
+	modbus_t *ctx = main_modbus_init();
 
 	// Craft compound message
-	g_autoptr(GString) cmd = g_string_new(argv[1]);
+	g_autoptr(GString) cmd = g_string_new(NULL);
+	g_string_append_c(cmd, dev_slave);
+	g_string_append_c(cmd, 0x1C); // Custom "ASCII wrapper" command
+	g_string_append(cmd, argv[1]);
 	for (int i=2; i<argc; i++) {
 		g_string_append_c(cmd, ' ');
 		g_string_append(cmd, argv[i]);
 	}
-	g_string_append_c(cmd, '\n');
 
-	// Serial comms
-	FILE *f = serial_fopen(dev_path, dev_baud);
-	if (f == NULL) {
-		err(1, "Unable to open serial port");
+	// Send it over Modbus, including the terminating NUL char.
+	if (modbus_send_raw_request(ctx, (uint8_t*)(cmd->str), cmd->len+1) == -1) {
+		errx(1, "Unable to send raw request: %s", modbus_strerror(errno));
 	}
 
-	// Set up signal handler in case of writing or reading blocks
-	if (signal(SIGALRM, serial_timeout) == SIG_ERR) {
-		err(1, "Unable to set a signal handler");
+	// Retrieving the answer payload
+	uint8_t rsp[MODBUS_MAX_ADU_LENGTH];
+	int len = modbus_receive_confirmation(ctx, rsp);
+	if (len == -1) {
+		errx(1, "Communication problem: %s", modbus_strerror(errno));
 	}
-	
-	if (fputs(cmd->str, f) == EOF) {
-		errx(1, "Unable to write to serial port");
+	if (len < 3) {
+		errx(1, "Response was too short (%d bytes)", len);
 	}
-	char *line = NULL;
-	size_t len;
-	alarm(1);
-	if (getline(&line, &len, f) == -1) {
-		errx(1, "Unable to read from serial port");
+	if (rsp[1] != dev_slave) {
+		errx(1, "Invalid server id (0x%02x)", rsp[0]);
+	}
+	if (rsp[1] != 0x1C) {
+		errx(1, "Response was incorrect (0x%02x)", rsp[0]);
 	}
 
-	if (line[0] == ' ') {
-		// Put the command as a reference for the error
-		// message.
-		fputs(cmd->str, stdout);
-	}
-	fputs(line, stdout);
-	free(line);
-}
+	// Now we are on the safe side, ready to print
+	puts((char*)(rsp+2));
 
-
-static void serial_timeout(int signo) {
-	errx(1, "Serial timeout. Is the device on and the baud rate correct?");
+	main_modbus_free(ctx);
 }
 
 // Command for syncing the clock time of a device.
