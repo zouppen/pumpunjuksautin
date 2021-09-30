@@ -25,7 +25,7 @@
 
 #define SERIAL_TX_END (serial_tx + SERIAL_TX_LEN)
 
-static bool strip_line_ending(char *buf, int const len);
+static bool strip_line_ending(char *const buf, int const len);
 static bool process_read(char *buf, char *serial_out, buflen_t parse_pos);
 static bool process_write(char *buf, buflen_t parse_pos);
 static bool process_help(void);
