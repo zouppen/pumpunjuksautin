@@ -26,7 +26,7 @@
 #include "../hardware_config.h"
 #include "../byteswap.h"
 
-const cmd_result_t cmd_scan_success = { 0, NULL, 0 };
+const cmd_result_t cmd_success = { NULL, NULL, 0 };
 
 // Functions are used by external commands via Modbus or ASCII command
 // interface, defined in file avr/commands.tsv.
@@ -64,7 +64,7 @@ cmd_result_t cmd_scan_bool(char *const buf_in, void *setter)
 	set_bool_t *f = setter;
 	modbus_status_t status = f(val);
 	if (status == MODBUS_OK) {
-		return cmd_scan_success;
+		return cmd_success;
 	} else {
 		const cmd_result_t e = {0, modbus_strerror(status), status};
 		return e;
@@ -86,7 +86,7 @@ cmd_result_t cmd_scan_int16(char *const buf_in, void *setter)
 	set_int16_t *f = setter;
 	modbus_status_t status = f(val);
 	if (status == MODBUS_OK) {
-		return cmd_scan_success;
+		return cmd_success;
 	} else {
 		const cmd_result_t e = {0, modbus_strerror(status), status};
 		return e;
@@ -108,7 +108,7 @@ cmd_result_t cmd_scan_int32(char *const buf_in, void *setter)
 	set_int32_t *f = setter;
 	modbus_status_t status = f(val);
 	if (status == MODBUS_OK) {
-		return cmd_scan_success;
+		return cmd_success;
 	} else {
 		const cmd_result_t e = {0, modbus_strerror(status), status};
 		return e;

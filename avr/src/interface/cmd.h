@@ -19,7 +19,7 @@ typedef struct {
 } cmd_modbus_result_t;
 
 // Successful scan result. Defined in cmd_functions.c
-extern const cmd_result_t cmd_scan_success;
+extern const cmd_result_t cmd_success;
 
 // Function which parses already tokenized (null terminated) text and
 // passes it to given setter function. Returns cmd_result_t
