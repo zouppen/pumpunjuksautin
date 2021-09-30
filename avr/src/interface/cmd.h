@@ -22,10 +22,10 @@ typedef struct {
 extern const cmd_result_t cmd_success;
 
 // Return cmd_result_t with the given error. String is put to progmem.
-#define FAIL(pos, msg, ...) { cmd_result_t _e = {pos, PSTR(msg) ##__VA_ARGS__}; return _e; }
+#define FAIL(pos, msg, ...) { cmd_result_t _e = {pos, PSTR(msg), ##__VA_ARGS__}; return _e; }
 
 // As FAIL, but the string is already in PROGMEM
-#define FAIL_P(pos, msg, ...) { cmd_result_t _e = {pos, msg ##__VA_ARGS__}; return _e; }
+#define FAIL_P(pos, msg, ...) { cmd_result_t _e = {pos, msg, ##__VA_ARGS__}; return _e; }
 
 // Function which parses already tokenized (null terminated) text and
 // passes it to given setter function. Returns cmd_result_t
