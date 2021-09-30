@@ -65,8 +65,7 @@ int main(int argc, char **argv)
 					 "Commands:\n"
 					 "  show-transition       Show current time zone and future DST transition, if any.\n"
 					 "  sync-clock            Synchronize clock of JuksOS device. Sets also DST transition table.\n"
-					 "  get KEY..             Read values from the hardware via ASCII interface\n"
-					 "  set KEY=VALUE..       Write values to the hardware via ASCII interface"
+					 "  send KEY[=VALUE]..    Read and/or write values from/to the hardware via ASCII interface\n"
 					 "");
 
 	if (!g_option_context_parse(context, &argc, &argv, &error))
@@ -83,9 +82,8 @@ int main(int argc, char **argv)
 		cmd_show_transition();
 	} else if (matches(argv[1], "sync-clock", argc == 2)) {
 		cmd_sync_clock();
-	} else if (matches(argv[1], "get", argc > 2) ||
-		   matches(argv[1], "set", argc > 2)) {
-		cmd_ascii(argc, argv);
+	} else if (matches(argv[1], "send", argc > 2)) {
+		cmd_ascii(argc-2, argv+2);
 	} else {
 		errx(1, "Invalid command name. See %s --help", argv[0]);
 	}
@@ -99,17 +97,17 @@ static bool matches(char const *const arg, char const *command, bool const cond)
 	return true;
 }
 
-static void cmd_ascii(int const argc, char **argv)
+static void cmd_ascii(int const cmds, char **cmd)
 {
 	if (dev_path == NULL) {
 		errx(1, "Device name must be given with -d, optionally baud rate with -b");
 	}
 
 	// Craft compound message
-	g_autoptr(GString) line_in = g_string_new(argv[1]);
-	for (int i=2; i<argc; i++) {
+	g_autoptr(GString) line_in = g_string_new(cmd[0]);
+	for (int i=1; i<cmds; i++) {
 		g_string_append_c(line_in, ' ');
-		g_string_append(line_in, argv[i]);
+		g_string_append(line_in, cmd[i]);
 	}
 	g_string_append_c(line_in, '\n');
 
