@@ -234,18 +234,20 @@ static modbus_t *main_modbus_init(void)
 	// Prepare modbus
 	modbus_t *ctx = modbus_new_rtu(dev_path, dev_baud, 'N', 8, 1);
 	if (ctx == NULL) {
-		err(1, "Unable to create the libmodbus context");
+		goto modbus_error;
 	}
 
 	if (modbus_connect(ctx)) {
-		err(5, "Unable to open serial port");
+		goto modbus_error;
 	}
 
 	if (modbus_set_slave(ctx, dev_slave)) {
-		err(5, "Unable to set modbus server id");
+		goto modbus_error;
 	}
 	
 	return ctx;
+ modbus_error:
+	errx(5, "Modbus communication error: %s", strerror(errno));
 }
 
 static void main_modbus_free(modbus_t *ctx)

@@ -22,6 +22,7 @@
 #include <modbus.h>
 #include <time.h>
 #include <err.h>
+#include <errno.h>
 #include "tz.h"
 
 static uint32_t exact_timestamp();
@@ -44,7 +45,7 @@ void sync_clock(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
 	buf[1] = now;
 
 	if (modbus_write_registers(ctx, 0, 8, buf) != 8) {
-		err(2, "Modbus write failed");
+		errx(2, "Modbus write failed: %s", modbus_strerror(errno));
 	}
 }
 
