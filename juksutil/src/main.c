@@ -77,6 +77,17 @@ int main(int argc, char **argv)
 	if (argc < 2) {
 		errx(1, "Command missing. See %s --help", argv[0]);
 	}
+
+	// Set up signal handler for timeouts
+	struct sigaction act;
+	act.sa_handler = serial_timeout;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	if (sigaction(SIGALRM, &act, NULL) == -1) {
+		err(1, "Unable to set a signal handler");
+	}
+
+	// Command parser
 	if (matches(argv[1], "show-transition", argc == 2)) {
 		// Validate args
 		cmd_show_transition();
@@ -115,11 +126,6 @@ static void cmd_ascii(int const cmds, char **cmd)
 	FILE *f = serial_fopen(dev_path, dev_baud);
 	if (f == NULL) {
 		err(1, "Unable to open serial port");
-	}
-
-	// Set up signal handler in case of writing or reading blocks
-	if (signal(SIGALRM, serial_timeout) == SIG_ERR) {
-		err(1, "Unable to set a signal handler");
 	}
 	
 	if (fputs(line_in->str, f) == EOF) {
