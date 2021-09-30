@@ -106,12 +106,12 @@ static void cmd_ascii(int const argc, char **argv)
 	}
 
 	// Craft compound message
-	g_autoptr(GString) cmd = g_string_new(argv[1]);
+	g_autoptr(GString) line_in = g_string_new(argv[1]);
 	for (int i=2; i<argc; i++) {
-		g_string_append_c(cmd, ' ');
-		g_string_append(cmd, argv[i]);
+		g_string_append_c(line_in, ' ');
+		g_string_append(line_in, argv[i]);
 	}
-	g_string_append_c(cmd, '\n');
+	g_string_append_c(line_in, '\n');
 
 	// Serial comms
 	FILE *f = serial_fopen(dev_path, dev_baud);
@@ -124,23 +124,23 @@ static void cmd_ascii(int const argc, char **argv)
 		err(1, "Unable to set a signal handler");
 	}
 	
-	if (fputs(cmd->str, f) == EOF) {
+	if (fputs(line_in->str, f) == EOF) {
 		errx(1, "Unable to write to serial port");
 	}
-	char *line = NULL;
+	char *line_out = NULL;
 	size_t len;
 	alarm(1);
-	if (getline(&line, &len, f) == -1) {
+	if (getline(&line_out, &len, f) == -1) {
 		errx(1, "Unable to read from serial port");
 	}
 
-	if (line[0] == ' ') {
+	if (line_out[0] == ' ') {
 		// Put the command as a reference for the error
 		// message.
-		fputs(cmd->str, stdout);
+		fputs(line_in->str, stdout);
 	}
-	fputs(line, stdout);
-	free(line);
+	fputs(line_out, stdout);
+	free(line_out);
 }
 
 
