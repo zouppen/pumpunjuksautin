@@ -7,7 +7,7 @@
 
 // Scan result. If error_msg == NULL it succeeded
 typedef struct {
-	buflen_t error_pos;    // Position relative to buf_in
+	char const *error_p;   // Pointer to the error location in input buffer
 	char const *error_msg; // Error, if any. Stored in PROGMEM.
 	uint32_t msg_arg1;     // First argument to the error msg
 } cmd_result_t;

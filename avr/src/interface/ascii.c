@@ -26,13 +26,12 @@
 #define SERIAL_TX_END (serial_tx + SERIAL_TX_LEN)
 
 static bool strip_line_ending(char *const buf, int const len);
-static bool process_read(char *buf, char *serial_out, buflen_t parse_pos);
-static bool process_write(char *buf, buflen_t parse_pos);
+static cmd_result_t process_read(char const *name, char **out);
+static cmd_result_t process_write(char const *name, char *value);
 static bool process_help(void);
 static cmd_ascii_t const *find_cmd(char const *const name);
 static int cmd_comparator(const void *key_void, const void *item_void);
-static buflen_t serial_pad(buflen_t n);
-static void error_full(buflen_t parse_pos);
+static void location_aware_error(char const *const ref, cmd_result_t const *const e);
 
 // Version definition is delivered by version.cmake
 extern char const version[] PROGMEM;
@@ -53,32 +52,13 @@ static bool strip_line_ending(char *const buf, int const len)
 	return true;
 }
 
-static buflen_t serial_pad(buflen_t n)
-{
-	if (n + 2 < SERIAL_TX_LEN) {
-		// Produce space padding
-		memset(serial_tx, ' ', n+2);
-		serial_tx[n] = '^';
-		return n+2;
-	} else {
-		// Otherwise just col position
-		return snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("At %d: "), n);
-	}
-}
-
 // Process read requests, writing to serial buffer.
-static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
+static cmd_result_t process_read(char const *name, char **out)
 {
-	const char *const ref_p = buf - parse_pos;
-
-	// Collecting parameter name to read
-	char const *const name = strsep(&buf, " ");
 	cmd_ascii_t const *const cmd = find_cmd(name);
 
 	if (cmd == NULL) {
-		const buflen_t pad = serial_pad(parse_pos);
-		strlcpy_P(serial_tx + pad, PSTR("Unknown field"), SERIAL_TX_LEN - pad);
-		return false;
+		FAIL(name, "Unknown command");
 	}
 
 	// Collecting scanner and writer from PROGMEM storage
@@ -87,80 +67,89 @@ static bool process_read(char *buf, char *serial_out, buflen_t parse_pos)
 	void const *reader = pgm_read_ptr_near(&(action->read));
 
 	if (printer == NULL) {
-		const buflen_t pad = serial_pad(parse_pos);
-		strlcpy_P(serial_tx + pad, PSTR("Not readable"), SERIAL_TX_LEN - pad);
-		return false;
+		FAIL(name, "Not readable");
 	}
 
 	// Output variable name. Ensure space for an equals sign.
-	serial_out += strlcpy(serial_out, name, SERIAL_TX_END - serial_out);
-	if (serial_out+1 >= SERIAL_TX_END) goto serial_full;
-	*serial_out++ = '=';
+	*out += strlcpy(*out, name, SERIAL_TX_END - *out);
+	if (*out + 1 >= SERIAL_TX_END) {
+		FAIL(name, "Serial buffer too short for this");
+	}
+	*(*out)++ = '=';
 
 	// Populate output buffer with the content. Function is
 	// responsible for the type safety of void function pointer.
-	buflen_t wrote = printer(serial_out, SERIAL_TX_END - serial_out, reader);
+	buflen_t wrote = printer(*out, SERIAL_TX_END - *out, reader);
 
-	// Ensure the content is fitted. Ensure space for NUL or space byte.
-	serial_out += wrote;
-	if (serial_out+1 >= SERIAL_TX_END) goto serial_full;
-
-	if (buf == NULL) {
-		// It's the last, we succeeded. NUL terminating the
-		// result string.
-		*serial_out = '\0';
-		return true;
-	} else {
-		// Otherwise doing a tail recursion until we run out
-		// of input data.
-		*serial_out++ = ' ';
-		return process_read(buf, serial_out, buf-ref_p);
+	// Ensure the content is fitted. Ensure space for a space byte.
+	*out += wrote + 1;
+	if (*out >= SERIAL_TX_END) {
+		FAIL(name, "Serial buffer too short for this");
 	}
-	
- serial_full:
-	error_full(parse_pos);
-	return false;
+	*(*out-1) = ' ';
+	return cmd_success;
 }
 
-static void error_full(buflen_t parse_pos)
+static void location_aware_error(char const *const ref, cmd_result_t const *const e)
 {
 	// String formatting is such a thing which is never easy to
-	// read. Not even trying to explain this. In case there are
-	// bugs found here, just rewrite this function.
-	const buflen_t pad = serial_pad(parse_pos);
-	int msg_len = 32;
-	int msg_pos = pad;
-	int tail = 0;
-	if (msg_pos + msg_len >= SERIAL_TX_LEN) {
-		// Put it before ^ sign
-		msg_pos = pad - 3 - msg_len;
-		if (msg_pos < 0) {
-			// If not enough, just print the message
-			msg_pos = 0;
-			if (msg_len >= SERIAL_TX_LEN) msg_len = SERIAL_TX_LEN-1;
+	// read. Some instructive comments added but it won't be too
+	// easy, though.
+
+	buflen_t const e_pos = e->error_p - ref;
+	buflen_t msg_pos = e_pos + 2;
+
+	// Do we use caret?
+	bool caret = msg_pos < SERIAL_TX_LEN;
+	bool reprint = true;
+
+	// Initial strategy: Put the message after the caret
+	if (caret) {
+		// Produce space padding
+		memset(serial_tx, ' ', msg_pos);
+		serial_tx[msg_pos-2] = '^';
+
+		// Append the error message. It is 16-bit int to avoid overflows
+		int msg_len = snprintf_P(serial_tx + msg_pos, SERIAL_TX_LEN - msg_pos, e->error_msg, e->msg_arg1);
+		// If the message didn't fit, go for a different strategy.
+		if (msg_len + msg_pos >= SERIAL_TX_LEN) {
+			if (msg_len + 1 > e_pos) {
+				// Doesn't even fit before.
+				caret = false;
+			} else {
+				// Message can fit before the
+				// caret. Calculating new position and
+				// terminating after the caret.
+				msg_pos = e_pos - msg_len - 1;
+				serial_tx[e_pos+1] = '\0';
+			}
 		} else {
-			tail = 2;
+			// We were able to fit it, no reprinting of
+			// the message needed.
+			reprint = false;
 		}
 	}
 
-	strncpy_P(serial_tx + msg_pos, PSTR("Serial buffer too short for this"), msg_len);
-	// Terminate string
-	serial_tx[msg_pos + msg_len + tail] = '\0';
+	if (reprint) {
+		if (!caret) {
+			// Output location instead of caret
+			msg_pos = snprintf_P(serial_tx, SERIAL_TX_LEN, PSTR("At %d: "), e_pos);
+		}
+		snprintf_P(serial_tx + msg_pos, SERIAL_TX_LEN - msg_pos, e->error_msg, e->msg_arg1);
+		if (caret) {
+			// Strip NUL char if ther's caret following
+			serial_tx[e_pos-1] = ' ';
+		}
+	}
 }
 
-// Process write requests. Outputs error messages or "OK".
-static bool process_write(char *buf, buflen_t parse_pos)
+// Process write requests. Doesn't output anything.
+static cmd_result_t process_write(char const *name, char *value)
 {
-	const char *const ref_p = buf;
-
-	// Finding the name from the lookup table
-	char const *const name = strsep(&buf, "=");
 	cmd_ascii_t const *const cmd = find_cmd(name);
 
 	if (cmd == NULL) {
-		const buflen_t pad = serial_pad(parse_pos);
-		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, PSTR("Unknown field"));
-		return false;
+		FAIL(name, "Unknown command");
 	}
 
 	// Collecting scanner and writer from PROGMEM storage
@@ -169,36 +158,12 @@ static bool process_write(char *buf, buflen_t parse_pos)
 	void const *writer = pgm_read_ptr_near(&(action->write));
 
 	if (scanner == NULL) {
-		const buflen_t pad = serial_pad(parse_pos);
-		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, PSTR("Not writable"), name);
-		return false;
+		FAIL(name, "Not writable");
 	}
 
-	// We need the value as well
-	char *const value = strsep(&buf, " ");
-	if (value == NULL) {
-		const buflen_t pad = serial_pad(parse_pos+strlen(name));
-		snprintf_P(serial_tx + pad, SERIAL_TX_LEN - pad, PSTR("Expected '='"));
-		return false;
-	}
-	
 	// OK, now it gets exciting. We have all the functions, so
 	// just doing the magic!
-	buflen_t const val_pos = value - ref_p + parse_pos;
-	const cmd_result_t res = scanner(value, writer);
-	if (res.error_msg != NULL) {
-		const buflen_t pad = serial_pad(val_pos + res.error_pos);
-		snprintf_P(serial_tx+pad, SERIAL_TX_LEN-pad, res.error_msg, res.msg_arg1);
-		return false;
-	}
-
-	// If it's the last, we succeeded. Otherwise doing a tail
-	// recursion until we run out of data.
-	if (buf == NULL) {
-		strcpy_P(serial_tx, PSTR("OK"));
-		return true;
-	}
-	return process_write(buf, buf - ref_p + parse_pos);
+	return scanner(value, writer);
 }
 
 static bool process_help()
@@ -216,7 +181,7 @@ static bool process_help()
 		serial_tx_line();
 		while (serial_is_transmitting());
 	}
-	strncpy_P(serial_tx, PSTR("\nUsage:\n\n  GET [REGISTER]...\n  SET [REGISTER=VALUE]...\n"), SERIAL_TX_LEN);
+	strncpy_P(serial_tx, PSTR("\nUsage:\n\n  [REGISTER[=VALUE]..]\n"), SERIAL_TX_LEN);
 	return true;
 }
 
@@ -243,7 +208,8 @@ static int cmd_comparator(const void *key_void, const void *item_void)
 // performs the operations in there.
 bool ascii_interface(char *buf, buflen_t len)
 {
-	const char *const ref_p = buf;
+	char const *const buf_start = buf;
+	char *out = serial_tx;
 
 	// Handle corner cases: incorrect line ending or empty
 	// message. NB! strip_line_ending alters the buffer!
@@ -252,33 +218,42 @@ bool ascii_interface(char *buf, buflen_t len)
 		return false;
 	}
 
-	// Operation type parsing
-	char *const op = strsep(&buf, " ");
-	if (op != NULL) {
-		if (strcasecmp_P(op, PSTR("get")) == 0) {
-			if (buf == NULL) {
-				strcpy_P(serial_tx, PSTR("   ^ Expecting arguments"));
-				return false;
-			}
-			return process_read(buf, serial_tx, buf-ref_p);
-		}
-		if (strcasecmp_P(op, PSTR("set")) == 0) {
-			if (buf == NULL) {
-				strcpy_P(serial_tx, PSTR("   ^ Expecting arguments"));
-				return false;
-			}
-			return process_write(buf, buf-ref_p);
-		}
-		if (strcasecmp_P(op, PSTR("help")) == 0) {
-			if (buf != NULL) {
-				strcpy_P(serial_tx, PSTR("    ^ No arguments expected"));
-				return false;
-			}
-			return process_help();
-		}
-
+	if (buf[0] == '\0') {
+		strcpy_P(serial_tx, PSTR("^ Expecting command. Ask for 'HELP'"));
+		return false;
 	}
 
-	strcpy_P(serial_tx, PSTR("^ Expecting 'GET', 'SET', or 'HELP'"));
-	return false;
+	if (strcasecmp_P(buf, PSTR("help")) == 0) {
+		return process_help();
+	}
+
+	do {
+		// Operation type parsing
+		char *value = strsep(&buf, " ");
+		char *name = strsep(&value, "=");
+
+		cmd_result_t res;
+		if (value == NULL) {
+			res = process_read(name, &out);
+		} else {
+			res = process_write(name, value);
+		}
+
+		if (res.error_msg != NULL) {
+			// We have to craft an error message
+			location_aware_error(buf_start, &res);
+			return false;
+		}
+	} while (buf != NULL);
+
+	if (out == serial_tx) {
+		// Filling OK if nothing else was written.
+		strcpy_P(serial_tx, PSTR("OK"));
+	} else {
+		// Replace last space with NUL in case something was
+		// written.
+		*(out-1) = '\0';
+	}
+
+	return true;
 }
