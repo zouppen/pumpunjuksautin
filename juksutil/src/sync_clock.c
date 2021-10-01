@@ -25,7 +25,7 @@
 #include <errno.h>
 #include "tz.h"
 
-static uint32_t exact_timestamp();
+static time_t exact_timestamp();
 
 // TODO return errors instead of dying
 void sync_clock_modbus(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
@@ -50,7 +50,7 @@ void sync_clock_modbus(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
 }
 
 // Does exact timestamp by sleeping until the next full second
-static uint32_t exact_timestamp()
+static time_t exact_timestamp()
 {
 	struct timespec tp;
 	if (clock_gettime(CLOCK_REALTIME, &tp)) err(1, "Time retrieval failed");
