@@ -134,7 +134,7 @@ static void cmd_ascii(int const cmds, char **cmd)
 	}
 
 	char *line_out = NULL;
-	size_t len;
+	size_t len = 0;
 	if (getline(&line_out, &len, f) == -1) {
 		errx(1, "Unable to read from serial port");
 	}
@@ -154,7 +154,7 @@ static void cmd_ascii(int const cmds, char **cmd)
 
 
 static void serial_timeout(int signo) {
-	errx(1, "Serial timeout. Is the device on and the baud rate correct?");
+	errx(1, "ASCII serial protocol timeout. Is the device on and is the baud rate correct?");
 }
 
 // Command for syncing the clock time of a device.
