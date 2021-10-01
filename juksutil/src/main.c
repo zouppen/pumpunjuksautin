@@ -33,6 +33,7 @@ static tzinfo_t get_tzinfo(void);
 static char *format_iso8601(time_t ref);
 static void cmd_show_transition(void);
 static void cmd_sync_clock_modbus();
+static void cmd_sync_clock_ascii();
 static void cmd_ascii(int const argc, char **argv);
 static bool matches(char const *const arg, char const *command, bool const cond);
 static void serial_timeout(int signo);
@@ -44,7 +45,7 @@ static gchar *time_zone = "localtime";
 static gchar *now_str = NULL;
 static gchar *dev_path = NULL;
 static gint dev_baud = 9600;
-static gint dev_slave = 1;
+static gint dev_slave = 0;
 
 static GOptionEntry entries[] =
 {
@@ -52,7 +53,7 @@ static GOptionEntry entries[] =
 	{ "now", 'n', 0, G_OPTION_ARG_STRING, &now_str, "Use this time instead of current time. In ISO8601 format. Default: now", "STRING"},
 	{ "device", 'd', 0, G_OPTION_ARG_FILENAME, &dev_path, "Device path to JuksOS device", "PATH"},
 	{ "baud", 'b', 0, G_OPTION_ARG_INT, &dev_baud, "Device baud rate. Default: 9600", "BAUD"},
-	{ "slave", 's', 0, G_OPTION_ARG_INT, &dev_slave, "Device Modbus server id. Default: 1", "ID"},
+	{ "slave", 's', 0, G_OPTION_ARG_INT, &dev_slave, "Device Modbus server id. If not defined, ASCII protocol is used", "ID"},
 	{ NULL }
 };
 
@@ -93,7 +94,11 @@ int main(int argc, char **argv)
 		// Validate args
 		cmd_show_transition();
 	} else if (matches(argv[1], "sync-clock", argc == 2)) {
-		cmd_sync_clock_modbus();
+		if (dev_slave) {
+			cmd_sync_clock_modbus();
+		} else {
+			cmd_sync_clock_ascii();
+		}
 	} else if (matches(argv[1], "send", argc > 2)) {
 		cmd_ascii(argc-2, argv+2);
 	} else {
@@ -161,6 +166,17 @@ static void cmd_sync_clock_modbus()
 	sync_clock_modbus(&info, now_str == NULL, ctx);
 
 	main_modbus_free(ctx);
+}
+
+// Command for syncing the clock time of a device.
+static void cmd_sync_clock_ascii()
+{
+	FILE *f = main_serial_init();
+
+	tzinfo_t info = get_tzinfo();
+	sync_clock_ascii(&info, now_str == NULL, f);
+
+	fclose(f);
 }
 
 // Command for just showing the next DST transition and the UTC offset

@@ -49,6 +49,17 @@ void sync_clock_modbus(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
 	}
 }
 
+void sync_clock_ascii(tzinfo_t const *tz, bool real_time, FILE *f)
+{
+	// Sleep until next second if real time used
+	uint64_t now = real_time ? exact_timestamp() : tz->ref_time;
+
+	fprintf(f, "time=%" PRIu64 " gmtoff=%" PRId32
+		" next_turn=%" PRIu64 " gmtoff_turn=%" PRId32 "\n",
+		now, tz->gmtoff_now, tz->transition, tz->gmtoff_after);
+	fflush(f);
+}
+
 // Does exact timestamp by sleeping until the next full second
 static time_t exact_timestamp()
 {
