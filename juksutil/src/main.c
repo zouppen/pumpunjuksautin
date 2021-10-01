@@ -114,6 +114,12 @@ static void cmd_ascii(int const cmds, char **cmd)
 		errx(1, "Device name must be given with -d, optionally baud rate with -b");
 	}
 
+	// Serial comms
+	FILE *f = serial_fopen(dev_path, dev_baud);
+	if (f == NULL) {
+		err(1, "Unable to open serial port");
+	}
+
 	// Craft compound message
 	g_autoptr(GString) line_in = g_string_new(cmd[0]);
 	for (int i=1; i<cmds; i++) {
@@ -122,21 +128,21 @@ static void cmd_ascii(int const cmds, char **cmd)
 	}
 	g_string_append_c(line_in, '\n');
 
-	// Serial comms
-	FILE *f = serial_fopen(dev_path, dev_baud);
-	if (f == NULL) {
-		err(1, "Unable to open serial port");
-	}
+	// Do the serial operations with a timeout
+	alarm(1);
 	
 	if (fputs(line_in->str, f) == EOF) {
 		errx(1, "Unable to write to serial port");
 	}
+
 	char *line_out = NULL;
 	size_t len;
-	alarm(1);
 	if (getline(&line_out, &len, f) == -1) {
 		errx(1, "Unable to read from serial port");
 	}
+
+	// Cancel timeout
+	alarm(0);
 
 	if (line_out[0] == ' ') {
 		// Put the command as a reference for the error
@@ -145,6 +151,7 @@ static void cmd_ascii(int const cmds, char **cmd)
 	}
 	fputs(line_out, stdout);
 	free(line_out);
+	fclose(f);
 }
 
 
