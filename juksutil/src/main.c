@@ -165,7 +165,7 @@ static void cmd_sync_clock()
 	modbus_t *ctx = main_modbus_init();
 	
 	tzinfo_t info = get_tzinfo();
-	sync_clock(&info, now_str == NULL, ctx);
+	sync_clock_modbus(&info, now_str == NULL, ctx);
 
 	main_modbus_free(ctx);
 }

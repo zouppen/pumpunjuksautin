@@ -28,7 +28,7 @@
 static uint32_t exact_timestamp();
 
 // TODO return errors instead of dying
-void sync_clock(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
+void sync_clock_modbus(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
 {
 	// Collect data and swap endianness
 	uint16_t buf[8];
