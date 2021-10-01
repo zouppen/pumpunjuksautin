@@ -18,11 +18,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include <unistd.h>
 #include <inttypes.h>
 #include <modbus.h>
 #include <time.h>
 #include <err.h>
 #include <errno.h>
+#include <glib.h>
 #include "tz.h"
 
 static time_t exact_timestamp();
@@ -54,10 +57,32 @@ void sync_clock_ascii(tzinfo_t const *tz, bool real_time, FILE *f)
 	// Sleep until next second if real time used
 	uint64_t now = real_time ? exact_timestamp() : tz->ref_time;
 
-	fprintf(f, "time=%" PRIu64 " gmtoff=%" PRId32
-		" next_turn=%" PRIu64 " gmtoff_turn=%" PRId32 "\n",
-		now, tz->gmtoff_now, tz->transition, tz->gmtoff_after);
+	// Shouldn't take more than a second
+	alarm(1);
+
+	g_autoptr(GString) line_out = g_string_new(NULL);
+	g_string_printf(line_out,
+			"time=%" PRIu64 " gmtoff=%" PRId32
+			" next_turn=%" PRIu64 " gmtoff_turn=%" PRId32 "\n",
+			now, tz->gmtoff_now, tz->transition, tz->gmtoff_after);
+	fputs(line_out->str, f);
 	fflush(f);
+
+	char *line_in = NULL;
+	size_t len = 0;
+	if (getline(&line_in, &len, f) == -1) {
+		errx(1, "Unable to read from serial port");
+	}
+
+	// Cancel timeout
+	alarm(0);
+
+	if (strcmp("OK\n", line_in)) {
+		fputs(line_out->str, stdout);
+		fputs(line_in, stdout);
+		exit(1);
+	}
+	free(line_in);
 }
 
 // Does exact timestamp by sleeping until the next full second
