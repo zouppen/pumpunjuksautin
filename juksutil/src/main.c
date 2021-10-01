@@ -38,6 +38,7 @@ static bool matches(char const *const arg, char const *command, bool const cond)
 static void serial_timeout(int signo);
 static modbus_t *main_modbus_init(void);
 static void main_modbus_free(modbus_t *ctx);
+static FILE *main_serial_init(void);
 
 static gchar *time_zone = "localtime";
 static gchar *now_str = NULL;
@@ -110,16 +111,6 @@ static bool matches(char const *const arg, char const *command, bool const cond)
 
 static void cmd_ascii(int const cmds, char **cmd)
 {
-	if (dev_path == NULL) {
-		errx(1, "Device name must be given with -d, optionally baud rate with -b");
-	}
-
-	// Serial comms
-	FILE *f = serial_fopen(dev_path, dev_baud);
-	if (f == NULL) {
-		err(1, "Unable to open serial port");
-	}
-
 	// Craft compound message
 	g_autoptr(GString) line_in = g_string_new(cmd[0]);
 	for (int i=1; i<cmds; i++) {
@@ -130,7 +121,9 @@ static void cmd_ascii(int const cmds, char **cmd)
 
 	// Do the serial operations with a timeout
 	alarm(1);
-	
+
+	FILE *f = main_serial_init();
+
 	if (fputs(line_in->str, f) == EOF) {
 		errx(1, "Unable to write to serial port");
 	}
@@ -267,4 +260,18 @@ static void main_modbus_free(modbus_t *ctx)
 {
 	modbus_close(ctx);
 	modbus_free(ctx);
+}
+
+static FILE *main_serial_init(void)
+{
+	if (dev_path == NULL) {
+		errx(1, "Device name must be given with -d, optionally baud rate with -b");
+	}
+
+	// Serial comms
+	FILE *f = serial_fopen(dev_path, dev_baud);
+	if (f == NULL) {
+		err(1, "Unable to open serial port");
+	}
+	return f;
 }
