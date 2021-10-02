@@ -34,6 +34,7 @@ static char *format_iso8601(time_t ref);
 static void cmd_show_transition(void);
 static void cmd_sync_clock_modbus();
 static void cmd_sync_clock_ascii();
+static void cmd_get_time_ascii();
 static void cmd_ascii(int const argc, char **argv);
 static bool matches(char const *const arg, char const *command, bool const cond);
 static void serial_timeout(int signo);
@@ -66,6 +67,7 @@ int main(int argc, char **argv)
 	g_option_context_set_description(context,
 					 "Commands:\n"
 					 "  show-transition       Show current time zone and future DST transition, if any.\n"
+					 "  get-time              Get current time from the device.\n"
 					 "  sync-clock            Synchronize clock of JuksOS device. Sets also DST transition table.\n"
 					 "  send KEY[=VALUE]..    Read and/or write values from/to the hardware via ASCII interface\n"
 					 "");
@@ -98,6 +100,12 @@ int main(int argc, char **argv)
 			cmd_sync_clock_modbus();
 		} else {
 			cmd_sync_clock_ascii();
+		}
+	} else if (matches(argv[1], "get-time", argc == 2)) {
+		if (dev_slave) {
+			printf("TODO\n");
+		} else {
+			cmd_get_time_ascii();
 		}
 	} else if (matches(argv[1], "send", argc > 2)) {
 		cmd_ascii(argc-2, argv+2);
@@ -152,9 +160,15 @@ static void cmd_ascii(int const cmds, char **cmd)
 	fclose(f);
 }
 
-
 static void serial_timeout(int signo) {
 	errx(1, "ASCII serial protocol timeout. Is the device on and is the baud rate correct?");
+}
+
+// Command for getting current time via ASCII
+static void cmd_get_time_ascii()
+{
+	char *s = "now";
+	cmd_ascii(1, &s);
 }
 
 // Command for syncing the clock time of a device.
