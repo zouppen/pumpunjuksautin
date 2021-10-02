@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 					 "Commands:\n"
 					 "  show-transition       Show current time zone and future DST transition, if any.\n"
 					 "  get-time              Get current time from the device.\n"
-					 "  sync-clock            Synchronize clock of JuksOS device. Sets also DST transition table.\n"
+					 "  sync-time             Synchronize clock of JuksOS device. Sets also DST transition table.\n"
 					 "  send KEY[=VALUE]..    Read and/or write values from/to the hardware via ASCII interface\n"
 					 "");
 
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 	if (matches(argv[1], "show-transition", argc == 2)) {
 		// Validate args
 		cmd_show_transition();
-	} else if (matches(argv[1], "sync-clock", argc == 2)) {
+	} else if (matches(argv[1], "sync-time", argc == 2)) {
 		if (dev_slave) {
 			cmd_sync_clock_modbus();
 		} else {
