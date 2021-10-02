@@ -125,6 +125,10 @@ static bool matches(char const *const arg, char const *command, bool const cond)
 
 static void cmd_ascii(int const cmds, char **cmd)
 {
+	if (dev_slave) {
+		errx(1, "ASCII interface not available using Modbus. Don't use -s.");
+	}
+	
 	// Craft compound message
 	g_autoptr(GString) line_in = g_string_new(cmd[0]);
 	for (int i=1; i<cmds; i++) {
