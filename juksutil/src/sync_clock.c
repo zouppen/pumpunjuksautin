@@ -35,17 +35,13 @@ void sync_clock_modbus(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
 {
 	// Collect data and swap endianness
 	uint16_t buf[8];
-	buf[2] = tz->gmtoff_now >> 16;
-	buf[3] = tz->gmtoff_now;
-	buf[4] = tz->transition >> 16;
-	buf[5] = tz->transition;
-	buf[6] = tz->gmtoff_after >> 16;
-	buf[7] = tz->gmtoff_after;
+	MODBUS_SET_INT32_TO_INT16(buf, 2, tz->gmtoff_now);
+	MODBUS_SET_INT32_TO_INT16(buf, 4, tz->transition);
+	MODBUS_SET_INT32_TO_INT16(buf, 6, tz->gmtoff_after);
 
 	// Sleep until next second and swap endianness of the timestamp
 	uint32_t now = real_time ? exact_timestamp() : tz->ref_time;
-	buf[0] = now >> 16;
-	buf[1] = now;
+	MODBUS_SET_INT32_TO_INT16(buf, 0, now);
 
 	if (modbus_write_registers(ctx, 0, 8, buf) != 8) {
 		errx(2, "Modbus write failed: %s", modbus_strerror(errno));
