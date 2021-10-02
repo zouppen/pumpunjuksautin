@@ -53,8 +53,8 @@ static function_handler_t write_registers;
 static handler_t const handlers[] PROGMEM = {
 	{ 0x01, &read_bits, COIL},
 	{ 0x02, &read_bits, DISCRETE_INPUT},
-	{ 0x03, &read_registers, INPUT_REGISTER},
-	{ 0x04, &read_registers, HOLDING_REGISTER},
+	{ 0x03, &read_registers, HOLDING_REGISTER},
+	{ 0x04, &read_registers, INPUT_REGISTER},
 	{ 0x05, &write_bit},
 	{ 0x06, &write_register},
 	{ 0x0F, &write_bits},
