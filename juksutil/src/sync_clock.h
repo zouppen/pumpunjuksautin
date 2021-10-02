@@ -1,5 +1,10 @@
 #pragma once
 
+#include <glib.h>
+
+// Get time using Modbus
+void sync_clock_get_time_modbus(GString *s, modbus_t *ctx);
+
 // Synchronizes clock time of a device using Modbus
 // protocol. Parameter real_time indicates if we synchronize current
 // time or use supplied reference time.

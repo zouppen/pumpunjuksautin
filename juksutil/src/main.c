@@ -34,6 +34,7 @@ static char *format_iso8601(time_t ref);
 static void cmd_show_transition(void);
 static void cmd_sync_clock_modbus();
 static void cmd_sync_clock_ascii();
+static void cmd_get_time_modbus();
 static void cmd_get_time_ascii();
 static void cmd_ascii(int const argc, char **argv);
 static bool matches(char const *const arg, char const *command, bool const cond);
@@ -103,7 +104,7 @@ int main(int argc, char **argv)
 		}
 	} else if (matches(argv[1], "get-time", argc == 2)) {
 		if (dev_slave) {
-			printf("TODO\n");
+			cmd_get_time_modbus();
 		} else {
 			cmd_get_time_ascii();
 		}
@@ -169,6 +170,18 @@ static void cmd_get_time_ascii()
 {
 	char *s = "now";
 	cmd_ascii(1, &s);
+}
+
+// Command for getting current time via Modbus
+static void cmd_get_time_modbus()
+{
+	modbus_t *ctx = main_modbus_init();
+	
+	g_autoptr(GString) s = g_string_new(NULL);
+	sync_clock_get_time_modbus(s, ctx);
+	puts(s->str);
+
+	main_modbus_free(ctx);
 }
 
 // Command for syncing the clock time of a device.

@@ -30,6 +30,24 @@
 
 static time_t exact_timestamp();
 
+void sync_clock_get_time_modbus(GString *s, modbus_t *ctx)
+{
+	uint16_t in[4];
+	if (modbus_read_registers(ctx, 0, 4, in) != 4) {
+		errx(2, "Modbus read failed: %s", modbus_strerror(errno));
+	}
+	time_t ts = MODBUS_GET_INT32_FROM_INT16(in, 0);
+	int32_t gmtoff = MODBUS_GET_INT32_FROM_INT16(in, 2);
+	ts += gmtoff;
+
+	struct tm tm;
+	gmtime_r(&ts, &tm);
+	tm.tm_gmtoff = gmtoff; // glibc only way to set timezone!
+	
+	g_string_set_size(s, 30);
+	s->len = strftime(s->str, 30, "now=%FT%T%z", &tm);
+}
+
 // TODO return errors instead of dying
 void sync_clock_modbus(tzinfo_t const *tz, bool real_time, modbus_t *ctx)
 {
