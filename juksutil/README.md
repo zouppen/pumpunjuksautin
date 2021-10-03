@@ -44,8 +44,8 @@ $ juksutil show-transition
 Current and following time zone for <strong>Europe/Berlin</strong>:
 
 <strong>                  UTC time              Local time                UNIX time   UTC off</strong>
-<strong>Current time:</strong>     2021-10-03T17:03:07Z  2021-10-03T19:03:07+0200  1633280587    +7200
-<strong>Next transition:</strong>  2021-10-31T01:00:00Z  2021-10-31T02:00:00+0100  1635642000    +3600
+<strong>Current time:</strong>     2021-10-03 17:03:07Z  2021-10-03 19:03:07+0200  1633280587    +7200
+<strong>Next transition:</strong>  2021-10-31 01:00:00Z  2021-10-31 02:00:00+0100  1635642000    +3600
 </pre>
 
 ### get-time
