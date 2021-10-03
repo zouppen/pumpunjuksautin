@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#define _GNU_SOURCE // for asprintf
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
@@ -57,14 +56,10 @@ bool tz_populate_tzinfo(tzinfo_t *dest, char const *zone, int64_t now)
 // Open given zone file with mmap()
 static bool mmap_zonefile(char const *zone, mmap_info_t *info)
 {
-	char *filename = NULL;
+	g_autoptr(GString) filename = g_string_new(NULL);
+	g_string_printf(filename, "/usr/share/zoneinfo/%s", zone);
 
-	if (asprintf(&filename, "/usr/share/zoneinfo/%s", zone) == -1) {
-		return false;
-	}
-
-	bool ok = mmap_open(filename, MMAP_MODE_READONLY, info);
-	free(filename);
+	bool ok = mmap_open(filename->str, MMAP_MODE_READONLY, info);
 	return ok;
 }
 
