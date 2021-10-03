@@ -4,8 +4,8 @@
 
 #include "../serial.h"
 
-// Return current Modbus station ID
-uint8_t modbus_get_station_id(void);
+// Return current Modbus server ID
+uint8_t modbus_get_server_id(void);
 
 // Processes given input and performs the Modbus operations in
 // there. If returns 0, doesn't want to give any response.

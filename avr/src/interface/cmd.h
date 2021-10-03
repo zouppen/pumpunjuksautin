@@ -7,7 +7,7 @@
 
 // Scan result. If error_msg == NULL it succeeded
 typedef struct {
-	buflen_t error_pos;    // Position relative to buf_in
+	char const *error_p;   // Pointer to the error location in input buffer
 	char const *error_msg; // Error, if any. Stored in PROGMEM.
 	uint32_t msg_arg1;     // First argument to the error msg
 } cmd_result_t;
@@ -19,7 +19,13 @@ typedef struct {
 } cmd_modbus_result_t;
 
 // Successful scan result. Defined in cmd_functions.c
-extern const cmd_result_t cmd_scan_success;
+extern const cmd_result_t cmd_success;
+
+// Return cmd_result_t with the given error. String is put to progmem.
+#define FAIL(pos, msg, ...) { cmd_result_t _e = {pos, PSTR(msg), ##__VA_ARGS__}; return _e; }
+
+// As FAIL, but the string is already in PROGMEM
+#define FAIL_P(pos, msg, ...) { cmd_result_t _e = {pos, msg, ##__VA_ARGS__}; return _e; }
 
 // Function which parses already tokenized (null terminated) text and
 // passes it to given setter function. Returns cmd_result_t

@@ -26,7 +26,7 @@
 #include "../hardware_config.h"
 #include "../byteswap.h"
 
-const cmd_result_t cmd_scan_success = { 0, NULL, 0 };
+const cmd_result_t cmd_success = { NULL, NULL, 0 };
 
 // Functions are used by external commands via Modbus or ASCII command
 // interface, defined in file avr/commands.tsv.
@@ -56,18 +56,16 @@ cmd_result_t cmd_scan_bool(char *const buf_in, void *setter)
 		val = false;
 	} else {
 		// Parsing failed
-		const cmd_result_t e = {0, PSTR("Allowed values: 0, 1, ON, or OFF"), 0};
-		return e;
+		FAIL(buf_in, "Allowed values: 0, 1, ON, or OFF");
 	}
 
 	// Pass it on setter
 	set_bool_t *f = setter;
 	modbus_status_t status = f(val);
 	if (status == MODBUS_OK) {
-		return cmd_scan_success;
+		return cmd_success;
 	} else {
-		const cmd_result_t e = {0, modbus_strerror(status), status};
-		return e;
+		FAIL_P(buf_in, modbus_strerror(status), status);
 	}
 }
 
@@ -78,18 +76,16 @@ cmd_result_t cmd_scan_int16(char *const buf_in, void *setter)
 	int16_t val;
 	int items = sscanf_P(buf_in, PSTR("%" SCNi16 "%n"), &val, &read);
 	if (items != 1 || buf_in[read] != '\0') {
-		const cmd_result_t e = { read, PSTR("Not a digit"), 0};
-		return e;
+		FAIL(buf_in+read, "Not a digit");
 	}
 
 	// Pass it on setter
 	set_int16_t *f = setter;
 	modbus_status_t status = f(val);
 	if (status == MODBUS_OK) {
-		return cmd_scan_success;
+		return cmd_success;
 	} else {
-		const cmd_result_t e = {0, modbus_strerror(status), status};
-		return e;
+		FAIL_P(buf_in, modbus_strerror(status), status);
 	}
 }
 
@@ -100,18 +96,16 @@ cmd_result_t cmd_scan_int32(char *const buf_in, void *setter)
 	int32_t val;
 	int items = sscanf_P(buf_in, PSTR("%" SCNi32 "%n"), &val, &read);
 	if (items != 1 || buf_in[read] != '\0') {
-		const cmd_result_t e = { read, PSTR("Not a digit"), 0};
-		return e;
+		FAIL(buf_in+read, "Not a digit");
 	}
 
 	// Pass it on setter
 	set_int32_t *f = setter;
 	modbus_status_t status = f(val);
 	if (status == MODBUS_OK) {
-		return cmd_scan_success;
+		return cmd_success;
 	} else {
-		const cmd_result_t e = {0, modbus_strerror(status), status};
-		return e;
+		FAIL_P(buf_in, modbus_strerror(status), status);
 	}
 }
 

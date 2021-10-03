@@ -20,7 +20,7 @@ divided to it's components:
 * [Documentation](docs/)
 * [Enclosure design](enclosure/README.md)
 * [Printed circuit board design](pcb/)
-* [Operational utilities](tools/)
+* [Operational utilities](juksutil/) (JuksUtil)
 
 ## License
 The contents of this repository are licensed under the GNU General Public
