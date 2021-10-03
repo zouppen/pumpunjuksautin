@@ -30,6 +30,7 @@ static bool find_next_transition(tzinfo_t *dest, char *p, int len, int64_t now);
 
 static int const header_len = 0x2c;
 static int const header_boilerplate = 0x14;
+static char const zone_dir[] = "/usr/share/zoneinfo/";
 
 typedef struct __attribute__((packed)) {
 	int32_t        tt_gmtoff;
@@ -53,11 +54,24 @@ bool tz_populate_tzinfo(tzinfo_t *dest, char const *zone, int64_t now)
 	return true;
 }
 
+GString *tz_name(char const *zone)
+{
+	GString *out = g_string_new(NULL);
+	g_autoptr(GString) filename = g_string_new(zone_dir);
+	g_string_append(filename, zone);
+	char *const tmp = realpath(filename->str, NULL);
+	if (tmp == NULL) return out;
+	size_t const off = g_str_has_prefix(tmp, zone_dir) ? sizeof(zone_dir)-1 : 0;
+	g_string_append(out, tmp + off);
+	free(tmp);
+	return out;
+}
+
 // Open given zone file with mmap()
 static bool mmap_zonefile(char const *zone, mmap_info_t *info)
 {
-	g_autoptr(GString) filename = g_string_new(NULL);
-	g_string_printf(filename, "/usr/share/zoneinfo/%s", zone);
+	g_autoptr(GString) filename = g_string_new(zone_dir);
+	g_string_append(filename, zone);
 
 	bool ok = mmap_open(filename->str, MMAP_MODE_READONLY, info);
 	return ok;

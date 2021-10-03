@@ -216,6 +216,8 @@ static void cmd_show_transition()
 {
 	tzinfo_t info = get_tzinfo();
 	ldiv_t off_ref = ldiv(info.gmtoff_now / 60, 60);
+	g_autoptr(GString) name = tz_name(time_zone);
+	printf("Current and following time zone for \x1b[1m%s\x1b[0m:\n\n", name->str);
 	printf("\x1b[1m                  UTC time (ISO 8601)  Zone    UNIX time   UTC offset\x1b[0m\n");
 	printf("\x1b[1mReference time:\x1b[0m   %-19s  %+03ld:%02ld%12ld  %+10d\n", format_iso8601(info.ref_time), off_ref.quot, off_ref.rem, info.ref_time, info.gmtoff_now);
 	if (info.transition) {
