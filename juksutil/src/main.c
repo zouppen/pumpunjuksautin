@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <glib.h>
 #include <time.h>
+#include <inttypes.h>
 #include "tz.h"
 #include "sync_clock.h"
 #include "serial.h"
@@ -53,7 +54,7 @@ static gint dev_slave = 0;
 static GOptionEntry entries[] =
 {
 	{ "timezone", 'z', 0, G_OPTION_ARG_STRING, &time_zone, "Time zone used in date operations, e.g. Europe/Berlin. Default: localtime", "TZ"},
-	{ "now", 'n', 0, G_OPTION_ARG_STRING, &now_str, "Use this time instead of current time. In ISO8601 format. Default: now", "STRING"},
+	{ "now", 'n', 0, G_OPTION_ARG_STRING, &now_str, "Use this time instead of current time. Any format accepted by `date` is fine. Default: now", "STRING"},
 	{ "device", 'd', 0, G_OPTION_ARG_FILENAME, &dev_path, "Device path to JuksOS device", "PATH"},
 	{ "baud", 'b', 0, G_OPTION_ARG_INT, &dev_baud, "Device baud rate. Default: 9600", "BAUD"},
 	{ "slave", 's', 0, G_OPTION_ARG_INT, &dev_slave, "Device Modbus server id. If not defined, ASCII protocol is used", "ID"},
@@ -72,7 +73,8 @@ int main(int argc, char **argv)
 					 "  get-time              Get current time from the device.\n"
 					 "  sync-time             Synchronize clock of JuksOS device. Sets also DST transition table.\n"
 					 "  send KEY[=VALUE]..    Read and/or write values from/to the hardware via ASCII interface\n"
-					 "");
+					 "\n"
+					 "For more information about accepted timestamp formats, run: info coreutils date input\n");
 
 	if (!g_option_context_parse(context, &argc, &argv, &error))
 	{
@@ -266,17 +268,23 @@ static time_t get_timestamp()
 
 	// Fetching current time
 	if (now_str != NULL) {
-		// Trying to parse it to UNIX timestamp
-		struct tm tm;
-		char *end = strptime(now_str, "%FT%T", &tm);
-		if (end == NULL || *end != '\0') {
-			errx(1, "Invalid date format");
+		// Trying to parse it to UNIX timestamp with
+		// `date`. It's better than any libc or glib
+		// parsing function.
+		g_autoptr(GString) cmd = g_string_new("date +%s -d");
+		gchar *quoted = g_shell_quote(now_str);
+		g_string_append(cmd, quoted);
+		g_free(quoted);
+		FILE *f = popen(cmd->str, "r");
+		if (f == NULL) {
+			err(1, "Unable to run date command");
 		}
-
-		// Make it do dst lookup when converting the time
-		tm.tm_isdst = -1;
-
-		now = mktime(&tm);
+		int matches = fscanf(f, "%" SCNu64, &now);
+		pclose(f);
+		if (matches != 1) {
+			// The error message is printed anyway by date
+			exit(1);
+		}
 	} else {
 		now = time(NULL);
 	}
