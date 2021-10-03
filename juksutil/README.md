@@ -39,6 +39,13 @@ any device. It just shows what would be written. Also, it's
 suprisingly useful tool to check DST changes overall, in case you are
 interested about time zone stuff like me.
 
+<pre>
+$ juksutil show-transition
+                  <strong>UTC time (ISO 8601)  Zone    UNIX time   UTC offset</strong>
+<strong>Reference time:</strong>   2021-10-03T12:35:38  +02:00  1633264538       +7200
+<strong>Next transition:</strong>  2021-10-31T01:00:00  +01:00  1635642000       +3600
+</pre>
+
 ### get-time
 
 Get current time from the device. Format is ISO 8601 timestamp with
@@ -50,6 +57,9 @@ observing.
 Synchronize clock of JuksOS device. Sets also DST transition
 table. Supply the desired time zone with `-z` or otherwise your
 computer zone is used.
+
+The command outputs nothing on success. To verify it, you may run
+`juksutil get-time`.
 
 ### send
 
