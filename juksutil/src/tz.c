@@ -157,7 +157,10 @@ static bool find_next_transition(tzinfo_t *dest, char *p, int len, int64_t now)
 
 	// Populate answer
 	dest->gmtoff_now = be32toh(ttinfo_low->tt_gmtoff);
-	if (ttinfo_high == NULL) {
+	if (ttinfo_high == NULL || ttinfo_low->tt_gmtoff == ttinfo_high->tt_gmtoff) {
+		// Some zones have no future transitions or they have
+		// weird have a transition to the same UTC offset such
+		// as America/Montevideo in 2038.
 		dest->transition = 0;
 		dest->gmtoff_after = 0;
 	} else {
