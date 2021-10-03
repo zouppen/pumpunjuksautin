@@ -32,7 +32,7 @@
 static time_t get_timestamp(void);
 static tzinfo_t get_tzinfo(void);
 static char *format_iso8601(time_t ref);
-static char *format_localtime(time_t ref, int32_t gmtoff);
+static char *format_localtime(time_t ref, int32_t gmtoff, char *fmt);
 static void cmd_show_transition(void);
 static void cmd_sync_clock_modbus();
 static void cmd_sync_clock_ascii();
@@ -74,7 +74,9 @@ int main(int argc, char **argv)
 					 "  sync-time             Synchronize clock of JuksOS device. Sets also DST transition table.\n"
 					 "  send KEY[=VALUE]..    Read and/or write values from/to the hardware via ASCII interface\n"
 					 "\n"
-					 "For more information about accepted timestamp formats, run: info coreutils date input\n");
+					 "For more information about accepted timestamp formats, run: info coreutils date input\n"
+					 "To get list of all time zones known by your system, run: timedatectl list-timezones\n"
+					 "");
 
 	if (!g_option_context_parse(context, &argc, &argv, &error))
 	{
@@ -224,9 +226,11 @@ static void cmd_show_transition()
 	g_autoptr(GString) name = tz_name(time_zone);
 	printf("Current and following time zone for \x1b[1m%s\x1b[0m:\n\n", name->str);
 	printf("\x1b[1m                  UTC time             Local time           Zone   UNIX time  UTC off\x1b[0m\n");
-	printf("\x1b[1m%s\x1b[0m   %-21s%-27s%11ld%+8d\n", reftime_label, format_iso8601(info.ref_time), format_localtime(info.ref_time, info.gmtoff_now), info.ref_time, info.gmtoff_now);
+	printf("\x1b[1m%s\x1b[0m   %-21s%-27s%11ld%+8d\n", reftime_label, format_iso8601(info.ref_time), format_localtime(info.ref_time, info.gmtoff_now, "%F %T  %z"), info.ref_time, info.gmtoff_now);
 	if (info.transition) {
-		printf("\x1b[1mNext transition:\x1b[0m  %-21s%-27s%11ld%+8d\n", format_iso8601(info.transition), format_localtime(info.transition, info.gmtoff_after), info.transition, info.gmtoff_after);
+		printf("\x1b[1mNext transition:\x1b[0m  %-21s%-27s%11ld%+8d\n", format_iso8601(info.transition), format_localtime(info.transition, info.gmtoff_after, "%F %T  %z"), info.transition, info.gmtoff_after);
+		printf("\nThat is, on %s,", format_localtime(info.transition, info.gmtoff_now, "%B %d when the time gets %H:%M"));
+		printf(" the hands are moved to %s.\n", format_localtime(info.transition, info.gmtoff_after, "%H:%M"));
 	} else {
 		printf("\x1b[1mNext transition:\x1b[0m  No future transitions\n");
 	}
@@ -247,14 +251,14 @@ static char *format_iso8601(time_t ref)
 
 // Returns time formatted to ISO 8601 local time. This function is
 // not re-entrant. May terminate the program in case of an error.
-static char *format_localtime(time_t ref, int32_t gmtoff)
+static char *format_localtime(time_t ref, int32_t gmtoff, char *fmt)
 {
-	static char buf[30];
+	static char buf[40];
 	ref += gmtoff;
 	struct tm tm;
 	gmtime_r(&ref, &tm);
 	tm.tm_gmtoff = gmtoff; // glibc only way to set timezone!
-	if (strftime(buf, sizeof(buf), "%F %T  %z", &tm) == 0) goto fail;
+	if (strftime(buf, sizeof(buf), fmt, &tm) == 0) goto fail;
 	return buf;
  fail:
 	errx(1, "Date formatting error");

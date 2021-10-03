@@ -46,6 +46,8 @@ Current and following time zone for <strong>Europe/Berlin</strong>:
                   <strong>UTC time             Local time           Zone   UNIX time  UTC off
 Current time:</strong>     2021-10-03 18:59:09  2021-10-03 20:59:09  +0200  1633287549   +7200
 <strong>Next transition:</strong>  2021-10-31 01:00:00  2021-10-31 02:00:00  +0100  1635642000   +3600
+
+That is, on October 31 when the time gets 03:00, the hands are moved to 02:00.
 </pre>
 
 ### get-time
