@@ -223,10 +223,10 @@ static void cmd_show_transition()
 		"Reference time:";
 	g_autoptr(GString) name = tz_name(time_zone);
 	printf("Current and following time zone for \x1b[1m%s\x1b[0m:\n\n", name->str);
-	printf("\x1b[1m                  UTC time              Local time                UNIX time   UTC off\x1b[0m\n");
-	printf("\x1b[1m%s\x1b[0m   %-22s%-25s%11ld%+9d\n", reftime_label, format_iso8601(info.ref_time), format_localtime(info.ref_time, info.gmtoff_now), info.ref_time, info.gmtoff_now);
+	printf("\x1b[1m                  UTC time             Local time           Zone   UNIX time  UTC off\x1b[0m\n");
+	printf("\x1b[1m%s\x1b[0m   %-21s%-27s%11ld%+8d\n", reftime_label, format_iso8601(info.ref_time), format_localtime(info.ref_time, info.gmtoff_now), info.ref_time, info.gmtoff_now);
 	if (info.transition) {
-		printf("\x1b[1mNext transition:\x1b[0m  %-22s%-25s%11ld%+9d\n", format_iso8601(info.transition), format_localtime(info.transition, info.gmtoff_after), info.transition, info.gmtoff_after);
+		printf("\x1b[1mNext transition:\x1b[0m  %-21s%-27s%11ld%+8d\n", format_iso8601(info.transition), format_localtime(info.transition, info.gmtoff_after), info.transition, info.gmtoff_after);
 	} else {
 		printf("\x1b[1mNext transition:\x1b[0m  No future transitions\n");
 	}
@@ -239,7 +239,7 @@ static char *format_iso8601(time_t ref)
 	static char buf[25];
 	struct tm *tm = gmtime(&ref);
 	if (tm == NULL) goto fail;
-	if (strftime(buf, sizeof(buf), "%F %TZ", tm) == 0) goto fail;
+	if (strftime(buf, sizeof(buf), "%F %T", tm) == 0) goto fail;
 	return buf;
  fail:
 	errx(1, "Date formatting error");
@@ -254,7 +254,7 @@ static char *format_localtime(time_t ref, int32_t gmtoff)
 	struct tm tm;
 	gmtime_r(&ref, &tm);
 	tm.tm_gmtoff = gmtoff; // glibc only way to set timezone!
-	if (strftime(buf, sizeof(buf), "%F %T%z", &tm) == 0) goto fail;
+	if (strftime(buf, sizeof(buf), "%F %T  %z", &tm) == 0) goto fail;
 	return buf;
  fail:
 	errx(1, "Date formatting error");
