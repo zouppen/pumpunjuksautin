@@ -31,6 +31,7 @@
 static time_t get_timestamp(void);
 static tzinfo_t get_tzinfo(void);
 static char *format_iso8601(time_t ref);
+static char *format_localtime(time_t ref, int32_t gmtoff);
 static void cmd_show_transition(void);
 static void cmd_sync_clock_modbus();
 static void cmd_sync_clock_ascii();
@@ -215,27 +216,43 @@ static void cmd_sync_clock_ascii()
 static void cmd_show_transition()
 {
 	tzinfo_t info = get_tzinfo();
-	ldiv_t off_ref = ldiv(info.gmtoff_now / 60, 60);
+	char *reftime_label = now_str == NULL ?
+		"Current time:  ":
+		"Reference time:";
 	g_autoptr(GString) name = tz_name(time_zone);
 	printf("Current and following time zone for \x1b[1m%s\x1b[0m:\n\n", name->str);
-	printf("\x1b[1m                  UTC time (ISO 8601)  Zone    UNIX time   UTC offset\x1b[0m\n");
-	printf("\x1b[1mReference time:\x1b[0m   %-19s  %+03ld:%02ld%12ld  %+10d\n", format_iso8601(info.ref_time), off_ref.quot, off_ref.rem, info.ref_time, info.gmtoff_now);
+	printf("\x1b[1m                  UTC time              Local time                UNIX time   UTC off\x1b[0m\n");
+	printf("\x1b[1m%s\x1b[0m   %-22s%-25s%11ld%+9d\n", reftime_label, format_iso8601(info.ref_time), format_localtime(info.ref_time, info.gmtoff_now), info.ref_time, info.gmtoff_now);
 	if (info.transition) {
-		ldiv_t off_after = ldiv(info.gmtoff_after / 60, 60);
-		printf("\x1b[1mNext transition:\x1b[0m  %-19s  %+03ld:%02ld%12ld  %+10d\n", format_iso8601(info.transition), off_after.quot, off_after.rem, info.transition, info.gmtoff_after);
+		printf("\x1b[1mNext transition:\x1b[0m  %-22s%-25s%11ld%+9d\n", format_iso8601(info.transition), format_localtime(info.transition, info.gmtoff_after), info.transition, info.gmtoff_after);
 	} else {
 		printf("\x1b[1mNext transition:\x1b[0m  No future transitions\n");
 	}
 }
 
-// Returns time formatted to ISO8601 UTC timestamp. This function is
+// Returns time formatted to ISO 8601 UTC timestamp. This function is
 // not re-entrant. May terminate the program in case of an error.
 static char *format_iso8601(time_t ref)
 {
 	static char buf[25];
 	struct tm *tm = gmtime(&ref);
 	if (tm == NULL) goto fail;
-	if (strftime(buf, sizeof(buf), "%FT%T", tm) == 0) goto fail;
+	if (strftime(buf, sizeof(buf), "%FT%TZ", tm) == 0) goto fail;
+	return buf;
+ fail:
+	errx(1, "Date formatting error");
+}
+
+// Returns time formatted to ISO 8601 local time. This function is
+// not re-entrant. May terminate the program in case of an error.
+static char *format_localtime(time_t ref, int32_t gmtoff)
+{
+	static char buf[30];
+	ref += gmtoff;
+	struct tm tm;
+	gmtime_r(&ref, &tm);
+	tm.tm_gmtoff = gmtoff; // glibc only way to set timezone!
+	if (strftime(buf, sizeof(buf), "%FT%T%z", &tm) == 0) goto fail;
 	return buf;
  fail:
 	errx(1, "Date formatting error");
