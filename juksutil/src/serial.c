@@ -34,7 +34,7 @@
 
 static tcflag_t to_speed(const int speed);
 
-FILE *serial_fopen(char *path, int speed)
+FILE *serial_fopen(char *path, int speed, bool have_a_break)
 {
 	// Open file descriptor
 	int fd = open(path, O_RDWR);
@@ -42,6 +42,10 @@ FILE *serial_fopen(char *path, int speed)
 
 	// Set to raw mode and configure baud rate
 	if (!serial_raw(fd, speed)) return NULL;
+
+	if (have_a_break) {
+		if (tcsendbreak(fd, 0) == -1) return NULL;
+	}
 
 	// Making it a FILE
 	return fdopen(fd, "rb+");

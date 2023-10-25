@@ -50,6 +50,7 @@ static gchar *now_str = NULL;
 static gchar *dev_path = NULL;
 static gint dev_baud = 9600;
 static gint dev_slave = 0;
+static gboolean break_first = false;
 
 static GOptionEntry entries[] =
 {
@@ -58,6 +59,7 @@ static GOptionEntry entries[] =
 	{ "device", 'd', 0, G_OPTION_ARG_FILENAME, &dev_path, "Device path to JuksOS device", "PATH"},
 	{ "baud", 'b', 0, G_OPTION_ARG_INT, &dev_baud, "Device baud rate. Default: 9600", "BAUD"},
 	{ "slave", 's', 0, G_OPTION_ARG_INT, &dev_slave, "Device Modbus server id. If not defined, ASCII protocol is used", "ID"},
+	{ "break", 'B', 0, G_OPTION_ARG_NONE, &break_first, "Send BREAK before the command. Default: no break", NULL},
 	{ NULL }
 };
 
@@ -315,6 +317,13 @@ static modbus_t *main_modbus_init(void)
 		errx(1, "Device name must be given with -d, optionally baud rate with -b and server id with -s");
 	}
 
+	if (break_first) {
+		FILE *f = serial_fopen(dev_path, dev_baud, true);
+		if (f == NULL || fclose(f)) {
+			err(1, "Unable to send break signal");
+		}
+	}
+
 	// Prepare modbus
 	modbus_t *ctx = modbus_new_rtu(dev_path, dev_baud, 'N', 8, 1);
 	if (ctx == NULL) {
@@ -347,9 +356,10 @@ static FILE *main_serial_init(void)
 	}
 
 	// Serial comms
-	FILE *f = serial_fopen(dev_path, dev_baud);
+	FILE *f = serial_fopen(dev_path, dev_baud, break_first);
 	if (f == NULL) {
 		err(1, "Unable to open serial port");
 	}
+
 	return f;
 }
