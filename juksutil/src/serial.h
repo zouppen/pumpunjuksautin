@@ -5,10 +5,10 @@
 
 /**
  * Opens a given serial port, configures it as in serial_raw() and
- * returns a FILE handle. In case of an error, NULL is returned and
- * errno is set.
+ * returns a FILE handle. If have_a_break is true, BREAK is sent to
+ * the line. In case of an error, NULL is returned and errno is set.
  */
-FILE *serial_fopen(char *path, int speed);
+FILE *serial_fopen(char *path, int speed, bool have_a_break);
 
 /**
  * Configures serial port to use raw 8-bit mode and given baud
