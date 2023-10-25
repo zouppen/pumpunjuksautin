@@ -44,7 +44,15 @@ FILE *serial_fopen(char *path, int speed, bool have_a_break)
 	if (!serial_raw(fd, speed)) return NULL;
 
 	if (have_a_break) {
-		if (tcsendbreak(fd, 0) == -1) return NULL;
+#ifdef __linux__
+		// We use break duration of minimum of 2 bytes (20 bits) on wire
+		int const duration = (20000+speed-1)/speed;
+#else
+		// Fallback to UNIX default of 0.25...0.5 seconds. See
+		// NOTES in tcsendbreak(3) man page.
+		int const duration = 0;
+#endif
+		if (tcsendbreak(fd, duration) == -1) return NULL;
 	}
 
 	// Making it a FILE
